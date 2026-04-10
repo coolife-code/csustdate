@@ -34,7 +34,7 @@ const updateProfile = async (ctx) => {
   const updateData = ctx.request.body
   
   const allowedFields = [
-    'name', 'gender', 'birth_date', 'college', 'major', 'grade',
+    'nickname', 'name', 'gender', 'campus', 'college', 'major', 'grade',
     'bio', 'wechat', 'qq', 'phone'
   ]
   
@@ -70,7 +70,7 @@ const updateProfile = async (ctx) => {
 
 const updatePreferences = async (ctx) => {
   const userId = ctx.state.user.id
-  const { preferred_gender, min_age, max_age, preferred_colleges } = ctx.request.body
+  const { preferred_gender, preferred_colleges } = ctx.request.body
   
   let preference = await UserPreference.findOne({ where: { user_id: userId } })
   
@@ -78,15 +78,11 @@ const updatePreferences = async (ctx) => {
     preference = await UserPreference.create({
       user_id: userId,
       preferred_gender: preferred_gender || 'both',
-      min_age: min_age || 18,
-      max_age: max_age || 25,
       preferred_colleges: preferred_colleges || []
     })
   } else {
     await preference.update({
       preferred_gender: preferred_gender || preference.preferred_gender,
-      min_age: min_age || preference.min_age,
-      max_age: max_age || preference.max_age,
       preferred_colleges: preferred_colleges || preference.preferred_colleges
     })
   }

@@ -1,3 +1,4 @@
+import { sequelize } from '../config/database.js'
 import { QuestionnaireAnswer, QuestionnaireQuestion } from '../models/index.js'
 
 const getQuestions = async (ctx) => {
@@ -50,11 +51,28 @@ const saveAnswers = async (ctx) => {
     return
   }
 
-  const questionIds = answers.map(item => item.question_id)
+  const uniqueAnswerMap = new Map()
+  for (const answer of answers) {
+    if (!answer || !Number.isInteger(answer.question_id)) {
+      ctx.status = 400
+      ctx.body = {
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'question_id 必须是整数'
+        }
+      }
+      return
+    }
+    uniqueAnswerMap.set(answer.question_id, answer.answer_value)
+  }
+
+  const questionIds = [...uniqueAnswerMap.keys()]
   const validQuestions = await QuestionnaireQuestion.findAll({
     where: { id: questionIds }
   })
-  if (validQuestions.length !== questionIds.length) {
+  const validQuestionIdSet = new Set(validQuestions.map(item => item.id))
+  if (validQuestionIdSet.size !== questionIds.length) {
     ctx.status = 400
     ctx.body = {
       success: false,
@@ -66,15 +84,20 @@ const saveAnswers = async (ctx) => {
     return
   }
 
-  let savedCount = 0
-  for (const answer of answers) {
-    await QuestionnaireAnswer.upsert({
-      user_id: ctx.state.user.id,
-      question_id: answer.question_id,
-      answer_value: answer.answer_value
+  const payload = questionIds.map(questionId => ({
+    user_id: ctx.state.user.id,
+    question_id: questionId,
+    answer_value: uniqueAnswerMap.get(questionId)
+  }))
+
+  await sequelize.transaction(async (transaction) => {
+    await QuestionnaireAnswer.bulkCreate(payload, {
+      updateOnDuplicate: ['answer_value', 'updated_at'],
+      transaction
     })
-    savedCount += 1
-  }
+  })
+
+  const savedCount = payload.length
 
   const totalAnswered = await QuestionnaireAnswer.count({
     where: { user_id: ctx.state.user.id }

@@ -17,7 +17,7 @@
         <button @click="runMatch" class="px-lg py-sm bg-primary text-white hover:bg-secondary">立即尝试匹配</button>
       </div>
       <div v-else class="border border-border p-xl space-y-lg">
-        <h2 class="text-xl font-semibold">{{ match.match_user?.name || '匿名同学' }}</h2>
+        <h2 class="text-xl font-semibold">{{ match.match_user?.nickname || '匿名同学' }}</h2>
         <p>匹配分数：{{ match.match_score }}</p>
         <p>学院：{{ match.match_user?.college || '未填写' }}</p>
         <p>专业：{{ match.match_user?.major || '未填写' }}</p>

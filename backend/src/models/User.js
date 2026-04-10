@@ -37,6 +37,10 @@ User.init({
     type: DataTypes.STRING(255),
     allowNull: false
   },
+  nickname: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
   name: {
     type: DataTypes.STRING(100),
     allowNull: true
@@ -45,8 +49,8 @@ User.init({
     type: DataTypes.ENUM('male', 'female', 'other'),
     allowNull: true
   },
-  birth_date: {
-    type: DataTypes.DATEONLY,
+  campus: {
+    type: DataTypes.STRING(50),
     allowNull: true
   },
   college: {

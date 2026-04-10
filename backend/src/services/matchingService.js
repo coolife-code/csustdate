@@ -57,35 +57,12 @@ const buildAnswerMap = async (userId) => {
   return answerMap
 }
 
-const getAge = (birthDate) => {
-  if (!birthDate) {
-    return null
-  }
-  const birth = new Date(birthDate)
-  if (Number.isNaN(birth.getTime())) {
-    return null
-  }
-  const now = new Date()
-  let age = now.getFullYear() - birth.getFullYear()
-  const monthDiff = now.getMonth() - birth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
-    age -= 1
-  }
-  return age
-}
-
 const checkPreference = (user, preference, target) => {
   if (!preference) {
     return true
   }
   if (preference.preferred_gender !== 'both' && target.gender && preference.preferred_gender !== target.gender) {
     return false
-  }
-  const targetAge = getAge(target.birth_date)
-  if (targetAge) {
-    if (targetAge < preference.min_age || targetAge > preference.max_age) {
-      return false
-    }
   }
   if (preference.preferred_colleges?.length > 0 && target.college) {
     return preference.preferred_colleges.includes(target.college)

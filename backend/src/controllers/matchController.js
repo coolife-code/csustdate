@@ -15,6 +15,7 @@ const buildPublicMatchUser = (user) => {
   }
   return {
     id: user.id,
+    nickname: user.nickname,
     name: user.name,
     gender: user.gender,
     college: user.college,

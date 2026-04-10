@@ -86,27 +86,17 @@
               />
             </div>
 
-            <div>
-              <label class="block text-sm font-semibold mb-sm">确认密码</label>
-              <input
-                v-model="form.confirmPassword"
-                type="password"
-                placeholder="再次输入密码"
-                required
-                class="w-full px-md py-sm border border-border focus:border-primary focus:outline-none transition"
-              />
-            </div>
           </div>
 
           <div v-if="currentStep === 3" class="space-y-lg">
             <h3 class="text-xl font-semibold mb-lg">基本信息</h3>
             
             <div>
-              <label class="block text-sm font-semibold mb-sm">姓名</label>
+              <label class="block text-sm font-semibold mb-sm">昵称</label>
               <input
-                v-model="form.name"
+                v-model.trim="form.nickname"
                 type="text"
-                placeholder="请输入姓名"
+                placeholder="请输入昵称（将用于匹配邮件展示）"
                 required
                 class="w-full px-md py-sm border border-border focus:border-primary focus:outline-none transition"
               />
@@ -131,14 +121,17 @@
             </div>
 
             <div>
-              <label class="block text-sm font-semibold mb-sm">出生日期</label>
-              <input
-                v-model="form.birthDate"
-                type="date"
-                required
+              <label class="block text-sm font-semibold mb-sm">校区</label>
+              <select
+                v-model="form.campus"
                 class="w-full px-md py-sm border border-border focus:border-primary focus:outline-none transition"
-              />
+              >
+                <option value="">请选择</option>
+                <option value="云塘校区">云塘校区</option>
+                <option value="金盆岭校区">金盆岭校区</option>
+              </select>
             </div>
+
           </div>
 
           <div class="flex gap-md mt-2xl">
@@ -172,9 +165,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import api from '@/api'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const currentStep = ref(1)
 const loading = ref(false)
@@ -184,10 +179,9 @@ const form = ref({
   emailPrefix: '',
   code: '',
   password: '',
-  confirmPassword: '',
-  name: '',
+  nickname: '',
   gender: '',
-  birthDate: ''
+  campus: ''
 })
 
 const sendCode = async () => {
@@ -229,10 +223,6 @@ const handleNext = async () => {
       alert('密码至少8位')
       return
     }
-    if (form.value.password !== form.value.confirmPassword) {
-      alert('两次密码不一致')
-      return
-    }
     currentStep.value = 3
   } else {
     await handleRegister()
@@ -245,11 +235,17 @@ const handleRegister = async () => {
     const email = `${form.value.emailPrefix}@csust.edu.cn`
     const res = await api.post('/auth/register', {
       email,
+      nickname: form.value.nickname,
+      gender: form.value.gender || null,
+      campus: form.value.campus || null,
       password: form.value.password,
       code: form.value.code
     })
     
     localStorage.setItem('token', res.data.token)
+    userStore.token = res.data.token
+    userStore.user = res.data.user
+    await userStore.fetchProfile()
     router.push('/profile')
   } catch (error) {
     alert(error.error?.message || '注册失败')

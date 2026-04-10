@@ -22,14 +22,6 @@ UserPreference.init({
     type: DataTypes.ENUM('male', 'female', 'both'),
     defaultValue: 'both'
   },
-  min_age: {
-    type: DataTypes.INTEGER,
-    defaultValue: 18
-  },
-  max_age: {
-    type: DataTypes.INTEGER,
-    defaultValue: 25
-  },
   preferred_colleges: {
     type: DataTypes.TEXT,
     allowNull: true,

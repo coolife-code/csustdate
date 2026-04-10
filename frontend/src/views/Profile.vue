@@ -21,10 +21,21 @@
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
             <div>
+              <label class="block text-sm font-semibold mb-sm">昵称</label>
+              <input
+                v-model="form.nickname"
+                type="text"
+                placeholder="将用于匹配展示与匹配邮件"
+                class="w-full px-md py-sm border border-border focus:border-primary focus:outline-none transition"
+              />
+            </div>
+
+            <div>
               <label class="block text-sm font-semibold mb-sm">姓名</label>
               <input
                 v-model="form.name"
                 type="text"
+                placeholder="仅双向解锁后可见"
                 class="w-full px-md py-sm border border-border focus:border-primary focus:outline-none transition"
               />
             </div>
@@ -43,12 +54,15 @@
             </div>
 
             <div>
-              <label class="block text-sm font-semibold mb-sm">出生日期</label>
-              <input
-                v-model="form.birthDate"
-                type="date"
+              <label class="block text-sm font-semibold mb-sm">校区</label>
+              <select
+                v-model="form.campus"
                 class="w-full px-md py-sm border border-border focus:border-primary focus:outline-none transition"
-              />
+              >
+                <option value="">请选择</option>
+                <option value="云塘校区">云塘校区</option>
+                <option value="金盆岭校区">金盆岭校区</option>
+              </select>
             </div>
 
             <div>
@@ -148,27 +162,6 @@
                 <option value="female">女</option>
               </select>
             </div>
-
-            <div>
-              <label class="block text-sm font-semibold mb-sm">年龄范围</label>
-              <div class="flex items-center gap-sm">
-                <input
-                  v-model.number="form.minAge"
-                  type="number"
-                  min="18"
-                  max="30"
-                  class="flex-1 px-md py-sm border border-border focus:border-primary focus:outline-none transition"
-                />
-                <span>~</span>
-                <input
-                  v-model.number="form.maxAge"
-                  type="number"
-                  min="18"
-                  max="30"
-                  class="flex-1 px-md py-sm border border-border focus:border-primary focus:outline-none transition"
-                />
-              </div>
-            </div>
           </div>
         </div>
 
@@ -198,9 +191,10 @@ const colleges = ref([])
 const grades = ref([])
 
 const form = ref({
+  nickname: '',
   name: '',
   gender: '',
-  birthDate: '',
+  campus: '',
   college: '',
   major: '',
   grade: '',
@@ -208,9 +202,7 @@ const form = ref({
   wechat: '',
   qq: '',
   phone: '',
-  preferredGender: 'both',
-  minAge: 18,
-  maxAge: 25
+  preferredGender: 'both'
 })
 
 const loadColleges = async () => {
@@ -232,19 +224,20 @@ const loadGrades = async () => {
 }
 
 const loadProfile = async () => {
+  if (userStore.user) {
+    Object.assign(form.value, userStore.user)
+  }
   try {
     const res = await userStore.fetchProfile()
-    Object.assign(form.value, {
-      ...res.user,
-      birthDate: res.user.birth_date || ''
-    })
+    Object.assign(form.value, res.user)
     if (res.preferences) {
       form.value.preferredGender = res.preferences.preferred_gender || 'both'
-      form.value.minAge = res.preferences.min_age || 18
-      form.value.maxAge = res.preferences.max_age || 25
     }
   } catch (error) {
     console.error('加载用户资料失败', error)
+    if (userStore.user) {
+      Object.assign(form.value, userStore.user)
+    }
   }
 }
 

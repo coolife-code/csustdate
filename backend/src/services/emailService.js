@@ -62,6 +62,8 @@ class EmailService {
       'female': '女',
       'other': '其他'
     }
+    const userDisplayName = user.nickname || user.name || '同学'
+    const matchDisplayName = matchUser.nickname || '未设置'
     
     const mailOptions = {
       from: `"CSUST DateDrop" <${process.env.SMTP_USER}>`,
@@ -69,13 +71,13 @@ class EmailService {
       subject: '【CSUST DateDrop】本周为您匹配到了新对象！',
       html: `
         <div style="font-family: 'Helvetica Neue', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-          <h2 style="color: #1a1a1a; font-weight: 600; margin-bottom: 20px;">亲爱的 ${user.name || '同学'}：</h2>
+          <h2 style="color: #1a1a1a; font-weight: 600; margin-bottom: 20px;">亲爱的 ${userDisplayName}：</h2>
           <p style="color: #333; font-size: 16px; line-height: 1.6;">本周二，我们为您匹配到了一位新的对象！</p>
           
           <div style="background: #f5f5f5; padding: 30px; margin: 30px 0;">
             <h3 style="color: #000; margin-top: 0;">【匹配对象信息】</h3>
             <p style="color: #333; font-size: 15px; line-height: 1.8;">
-              <strong>姓名：</strong>${matchUser.name || '未设置'}<br>
+              <strong>昵称：</strong>${matchDisplayName}<br>
               <strong>性别：</strong>${genderMap[matchUser.gender] || '未设置'}<br>
               <strong>学院：</strong>${matchUser.college || '未设置'}<br>
               <strong>专业：</strong>${matchUser.major || '未设置'}<br>
@@ -113,6 +115,7 @@ class EmailService {
       return { messageId: 'dev-mode' }
     }
 
+    const matchDisplayName = matchUser.name || matchUser.nickname || '对方'
     const mailOptions = {
       from: `"CSUST DateDrop" <${process.env.SMTP_USER}>`,
       to: user.email,
@@ -121,7 +124,7 @@ class EmailService {
         <div style="font-family: 'Helvetica Neue', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <h2 style="color: #1a1a1a; font-weight: 600; margin-bottom: 20px;">恭喜你们双向解锁成功！</h2>
           <p style="color: #333; font-size: 16px; line-height: 1.8;">
-            你与 ${matchUser.name || '对方'} 已完成双向解锁，以下是对方联系方式：
+            你与 ${matchDisplayName} 已完成双向解锁，以下是对方联系方式：
           </p>
           <div style="background: #f5f5f5; padding: 24px; margin: 24px 0;">
             <p style="margin: 8px 0;"><strong>邮箱：</strong>${matchUser.email || '未设置'}</p>

@@ -30,9 +30,10 @@ export const useUserStore = defineStore('user', () => {
   
   const updateProfile = async (data) => {
     const profilePayload = {
+      nickname: data.nickname,
       name: data.name,
       gender: data.gender,
-      birth_date: data.birth_date || data.birthDate || '',
+      campus: data.campus,
       college: data.college,
       major: data.major,
       grade: data.grade,
@@ -42,9 +43,7 @@ export const useUserStore = defineStore('user', () => {
       phone: data.phone
     }
     const preferencePayload = {
-      preferred_gender: data.preferred_gender || data.preferredGender || 'both',
-      min_age: data.min_age || data.minAge || 18,
-      max_age: data.max_age || data.maxAge || 25
+      preferred_gender: data.preferred_gender || data.preferredGender || 'both'
     }
     const [profileRes] = await Promise.all([
       api.put('/users/profile', profilePayload),

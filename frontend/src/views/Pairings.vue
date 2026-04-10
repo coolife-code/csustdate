@@ -16,6 +16,7 @@
         <div v-if="loadingActive" class="text-text-muted">加载中...</div>
         <div v-else-if="!activePairing">暂无活跃配对</div>
         <div v-else class="space-y-sm">
+          <p>昵称：{{ activePairing.match_user?.nickname || '未填写' }}</p>
           <p>姓名：{{ activePairing.match_user?.name || '未填写' }}</p>
           <p>邮箱：{{ activePairing.match_user?.email || '未填写' }}</p>
           <p>微信：{{ activePairing.match_user?.wechat || '未填写' }}</p>
@@ -31,7 +32,7 @@
         <div v-else-if="history.length === 0">暂无历史配对记录</div>
         <div v-else class="space-y-md">
           <div v-for="item in history" :key="item.id" class="border border-border p-md">
-            <p>对象：{{ item.match_user?.name || '未填写' }}</p>
+            <p>对象：{{ item.match_user?.nickname || item.match_user?.name || '未填写' }}</p>
             <p>状态：{{ item.status }}</p>
             <p>创建时间：{{ formatTime(item.created_at) }}</p>
             <p v-if="item.ended_at">结束时间：{{ formatTime(item.ended_at) }}</p>

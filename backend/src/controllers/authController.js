@@ -88,15 +88,15 @@ const sendCode = async (ctx) => {
 }
 
 const register = async (ctx) => {
-  const { email, password, code } = ctx.request.body
+  const { email, password, code, nickname, gender, campus } = ctx.request.body
   
-  if (!email || !password || !code) {
+  if (!email || !password || !code || !nickname) {
     ctx.status = 400
     ctx.body = {
       success: false,
       error: {
         code: 'INVALID_REQUEST',
-        message: '请填写所有必填项'
+        message: '请填写邮箱、昵称、密码和验证码'
       }
     }
     return
@@ -141,6 +141,9 @@ const register = async (ctx) => {
   
   const user = await User.create({
     email,
+    nickname,
+    gender: gender || null,
+    campus: campus || null,
     password_hash: password,
     email_verified: true
   })
