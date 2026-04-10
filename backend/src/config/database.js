@@ -19,6 +19,16 @@ const sequelize = new Sequelize({
   }
 })
 
+const cleanupBackupTables = async () => {
+  const [tables] = await sequelize.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%_backup'")
+  if (!tables.length) {
+    return
+  }
+  for (const table of tables) {
+    await sequelize.query(`DROP TABLE IF EXISTS \`${table.name}\``)
+  }
+}
+
 const initDatabase = async () => {
   try {
     await import('../models/index.js')
@@ -32,8 +42,10 @@ const initDatabase = async () => {
     await sequelize.query('PRAGMA foreign_keys=ON;')
     
     logger.info('SQLite 优化配置完成')
-    
-    await sequelize.sync({ alter: true })
+
+    await cleanupBackupTables()
+    const shouldAlter = process.env.DB_SYNC_ALTER === 'true'
+    await sequelize.sync(shouldAlter ? { alter: true } : {})
     logger.info('数据库表同步完成')
   } catch (error) {
     logger.error('数据库连接失败:', error)

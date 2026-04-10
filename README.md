@@ -6,6 +6,7 @@
 
 ```
 ├── frontend/          # 前端项目 (Vue 3 + Vite)
+├── admin-frontend/    # 本地管理员面板 (Vue 3 + Vite)
 ├── backend/           # 后端项目 (Koa + SQLite)
 └── docs/              # 项目文档
 ```
@@ -21,6 +22,16 @@ npm run dev
 ```
 
 前端运行在 http://localhost:5173
+
+### 本地管理员面板
+
+```bash
+cd admin-frontend
+npm install
+npm run dev
+```
+
+管理员面板运行在 http://localhost:5174
 
 ### 后端
 
