@@ -1,8 +1,11 @@
 import Router from '@koa/router'
 import authRoutes from './auth.js'
 import userRoutes from './user.js'
+import questionnaireRoutes from './questionnaire.js'
+import matchRoutes from './match.js'
+import pairingRoutes from './pairing.js'
 
-const router = new Router()
+const router = new Router({ prefix: '/api' })
 
 router.get('/health', async (ctx) => {
   ctx.body = {
@@ -17,5 +20,8 @@ router.get('/health', async (ctx) => {
 
 router.use('/auth', authRoutes.routes(), authRoutes.allowedMethods())
 router.use('/users', userRoutes.routes(), userRoutes.allowedMethods())
+router.use('/questionnaire', questionnaireRoutes.routes(), questionnaireRoutes.allowedMethods())
+router.use('/matches', matchRoutes.routes(), matchRoutes.allowedMethods())
+router.use('/pairings', pairingRoutes.routes(), pairingRoutes.allowedMethods())
 
 export default router

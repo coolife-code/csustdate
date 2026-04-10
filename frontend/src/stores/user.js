@@ -29,9 +29,29 @@ export const useUserStore = defineStore('user', () => {
   }
   
   const updateProfile = async (data) => {
-    const res = await api.put('/users/profile', data)
-    user.value = res.data
-    return res.data
+    const profilePayload = {
+      name: data.name,
+      gender: data.gender,
+      birth_date: data.birth_date || data.birthDate || '',
+      college: data.college,
+      major: data.major,
+      grade: data.grade,
+      bio: data.bio,
+      wechat: data.wechat,
+      qq: data.qq,
+      phone: data.phone
+    }
+    const preferencePayload = {
+      preferred_gender: data.preferred_gender || data.preferredGender || 'both',
+      min_age: data.min_age || data.minAge || 18,
+      max_age: data.max_age || data.maxAge || 25
+    }
+    const [profileRes] = await Promise.all([
+      api.put('/users/profile', profilePayload),
+      api.put('/users/preferences', preferencePayload)
+    ])
+    user.value = profileRes.data
+    return profileRes.data
   }
   
   return {

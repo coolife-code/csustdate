@@ -106,6 +106,35 @@ class EmailService {
     
     return this.sendMail(mailOptions)
   }
+
+  async sendPairingUnlocked(user, matchUser) {
+    if (!this.transporter) {
+      logger.info(`[DEV MODE] Pairing unlocked notification for ${user.email}`)
+      return { messageId: 'dev-mode' }
+    }
+
+    const mailOptions = {
+      from: `"CSUST DateDrop" <${process.env.SMTP_USER}>`,
+      to: user.email,
+      subject: '【CSUST DateDrop】你们已双向解锁，联系方式已开放',
+      html: `
+        <div style="font-family: 'Helvetica Neue', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <h2 style="color: #1a1a1a; font-weight: 600; margin-bottom: 20px;">恭喜你们双向解锁成功！</h2>
+          <p style="color: #333; font-size: 16px; line-height: 1.8;">
+            你与 ${matchUser.name || '对方'} 已完成双向解锁，以下是对方联系方式：
+          </p>
+          <div style="background: #f5f5f5; padding: 24px; margin: 24px 0;">
+            <p style="margin: 8px 0;"><strong>邮箱：</strong>${matchUser.email || '未设置'}</p>
+            <p style="margin: 8px 0;"><strong>微信：</strong>${matchUser.wechat || '未设置'}</p>
+            <p style="margin: 8px 0;"><strong>QQ：</strong>${matchUser.qq || '未设置'}</p>
+            <p style="margin: 8px 0;"><strong>电话：</strong>${matchUser.phone || '未设置'}</p>
+          </div>
+          <p style="color: #666; font-size: 14px;">祝你们相处愉快。</p>
+        </div>
+      `
+    }
+    return this.sendMail(mailOptions)
+  }
   
   async sendMail(mailOptions) {
     try {

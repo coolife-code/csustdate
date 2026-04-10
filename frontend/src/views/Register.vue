@@ -36,13 +36,16 @@
             
             <div>
               <label class="block text-sm font-semibold mb-sm">教育邮箱</label>
-              <input
-                v-model="form.email"
-                type="email"
-                placeholder="student@csust.edu.cn"
-                required
-                class="w-full px-md py-sm border border-border focus:border-primary focus:outline-none transition"
-              />
+              <div class="flex">
+                <input
+                  v-model.trim="form.emailPrefix"
+                  type="text"
+                  placeholder="student"
+                  required
+                  class="flex-1 px-md py-sm border border-border border-r-0 focus:border-primary focus:outline-none transition"
+                />
+                <span class="px-md py-sm border border-border bg-surface text-text-secondary select-none">@csust.edu.cn</span>
+              </div>
               <p class="text-xs text-text-muted mt-xs">必须使用长沙理工大学教育邮箱</p>
             </div>
 
@@ -178,7 +181,7 @@ const loading = ref(false)
 const countdown = ref(0)
 
 const form = ref({
-  email: '',
+  emailPrefix: '',
   code: '',
   password: '',
   confirmPassword: '',
@@ -188,14 +191,15 @@ const form = ref({
 })
 
 const sendCode = async () => {
-  if (!form.value.email.endsWith('@csust.edu.cn')) {
-    alert('请使用长沙理工大学教育邮箱')
+  if (!form.value.emailPrefix || form.value.emailPrefix.includes('@')) {
+    alert('请输入正确的邮箱前缀')
     return
   }
+  const email = `${form.value.emailPrefix}@csust.edu.cn`
 
   try {
     await api.post('/auth/send-code', {
-      email: form.value.email,
+      email,
       type: 'register'
     })
     
@@ -238,8 +242,9 @@ const handleNext = async () => {
 const handleRegister = async () => {
   loading.value = true
   try {
+    const email = `${form.value.emailPrefix}@csust.edu.cn`
     const res = await api.post('/auth/register', {
-      email: form.value.email,
+      email,
       password: form.value.password,
       code: form.value.code
     })

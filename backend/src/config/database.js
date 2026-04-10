@@ -1,9 +1,11 @@
 import { Sequelize } from 'sequelize'
 import logger from '../utils/logger.js'
+import sqlite3Compat from '../utils/sqlite3Compat.js'
 
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: ':memory:',
+  storage: process.env.DB_PATH || './datedrop.sqlite',
+  dialectModule: sqlite3Compat,
   logging: false,
   pool: {
     max: 5,
@@ -19,6 +21,7 @@ const sequelize = new Sequelize({
 
 const initDatabase = async () => {
   try {
+    await import('../models/index.js')
     await sequelize.authenticate()
     logger.info('SQLite 数据库连接成功')
     

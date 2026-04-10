@@ -13,13 +13,16 @@
         <form @submit.prevent="handleLogin" class="space-y-lg">
           <div>
             <label class="block text-sm font-semibold mb-sm">邮箱</label>
-            <input
-              v-model="form.email"
-              type="email"
-              placeholder="student@csust.edu.cn"
-              required
-              class="w-full px-md py-sm border border-border focus:border-primary focus:outline-none transition"
-            />
+            <div class="flex">
+              <input
+                v-model.trim="form.emailPrefix"
+                type="text"
+                placeholder="student"
+                required
+                class="flex-1 px-md py-sm border border-border border-r-0 focus:border-primary focus:outline-none transition"
+              />
+              <span class="px-md py-sm border border-border bg-surface text-text-secondary select-none">@csust.edu.cn</span>
+            </div>
           </div>
 
           <div>
@@ -66,16 +69,20 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const form = ref({
-  email: '',
+  emailPrefix: '',
   password: ''
 })
 
 const loading = ref(false)
 
 const handleLogin = async () => {
+  if (!form.value.emailPrefix || form.value.emailPrefix.includes('@')) {
+    alert('请输入正确的邮箱前缀')
+    return
+  }
   loading.value = true
   try {
-    await userStore.login(form.value.email, form.value.password)
+    await userStore.login(`${form.value.emailPrefix}@csust.edu.cn`, form.value.password)
     router.push('/match')
   } catch (error) {
     alert(error.error?.message || '登录失败，请检查邮箱和密码')

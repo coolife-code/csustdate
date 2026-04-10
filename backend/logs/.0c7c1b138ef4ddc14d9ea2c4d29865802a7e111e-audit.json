@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 7
+    },
+    "auditLog": "D:\\seed\\sophomore_second\\datedrop\\4_8_1\\backend\\logs\\.0c7c1b138ef4ddc14d9ea2c4d29865802a7e111e-audit.json",
+    "files": [
+        {
+            "date": 1775794949112,
+            "name": "D:\\seed\\sophomore_second\\datedrop\\4_8_1\\backend\\logs\\error-2026-04-10.log",
+            "hash": "e80e9616bb5bfcf90e4ab2faa6fc1370dff221046c63cfc0b831f31946a1920d"
+        }
+    ],
+    "hashType": "sha256"
+}

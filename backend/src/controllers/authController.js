@@ -1,7 +1,15 @@
 import { User, VerificationCode } from '../models/index.js'
+import { Op } from 'sequelize'
 import { generateToken } from '../utils/jwt.js'
 import emailService from '../services/emailService.js'
 import logger from '../utils/logger.js'
+
+const getVerificationCode = () => {
+  if (process.env.NODE_ENV !== 'production') {
+    return process.env.DEV_MASTER_CODE || '123456'
+  }
+  return Math.random().toString().slice(-6)
+}
 
 const sendCode = async (ctx) => {
   const { email, type } = ctx.request.body
@@ -48,7 +56,7 @@ const sendCode = async (ctx) => {
     }
   }
   
-  const code = Math.random().toString().slice(-6)
+  const code = getVerificationCode()
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
   
   await VerificationCode.create({
@@ -63,6 +71,7 @@ const sendCode = async (ctx) => {
     
     ctx.body = {
       success: true,
+      data: process.env.NODE_ENV !== 'production' ? { dev_code: code } : undefined,
       message: '验证码已发送到您的邮箱'
     }
   } catch (error) {
@@ -100,7 +109,7 @@ const register = async (ctx) => {
       type: 'register',
       used: false,
       expires_at: {
-        $gt: new Date()
+        [Op.gt]: new Date()
       }
     }
   })
@@ -235,7 +244,7 @@ const resetPassword = async (ctx) => {
       type: 'reset_password',
       used: false,
       expires_at: {
-        $gt: new Date()
+        [Op.gt]: new Date()
       }
     }
   })

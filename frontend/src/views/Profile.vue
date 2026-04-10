@@ -4,6 +4,7 @@
       <div class="max-w-6xl mx-auto px-md py-md flex justify-between items-center">
         <h1 class="text-2xl font-serif font-semibold">CSUST DateDrop</h1>
         <nav class="flex gap-lg items-center">
+          <router-link to="/questionnaire" class="text-text-secondary hover:text-primary transition">我的问卷</router-link>
           <router-link to="/match" class="text-text-secondary hover:text-primary transition">本周匹配</router-link>
           <router-link to="/pairings" class="text-text-secondary hover:text-primary transition">我的配对</router-link>
           <button @click="logout" class="text-text-secondary hover:text-primary transition">退出</button>
@@ -233,7 +234,10 @@ const loadGrades = async () => {
 const loadProfile = async () => {
   try {
     const res = await userStore.fetchProfile()
-    Object.assign(form.value, res.user)
+    Object.assign(form.value, {
+      ...res.user,
+      birthDate: res.user.birth_date || ''
+    })
     if (res.preferences) {
       form.value.preferredGender = res.preferences.preferred_gender || 'both'
       form.value.minAge = res.preferences.min_age || 18
