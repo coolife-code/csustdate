@@ -1,5 +1,23 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+const getQuestionnaireCompleteness = async (token) => {
+  try {
+    const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+    const response = await fetch(`${baseURL}/questionnaire/progress`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (!response.ok) {
+      return null
+    }
+    const result = await response.json()
+    return result?.data?.completeness ?? null
+  } catch {
+    return null
+  }
+}
+
 const routes = [
   {
     path: '/',
@@ -47,14 +65,42 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token')
-  
+
   if (to.meta.requiresAuth && !token) {
     next('/login')
-  } else {
-    next()
+    return
   }
+
+  if (!token) {
+    next()
+    return
+  }
+
+  if (to.path === '/') {
+    const completeness = await getQuestionnaireCompleteness(token)
+    if (completeness === null) {
+      next('/match')
+      return
+    }
+    next(completeness >= 100 ? '/match' : '/questionnaire')
+    return
+  }
+
+  const requiresCompletedQuestionnaire = to.path === '/match' || to.path === '/pairings'
+  if (!requiresCompletedQuestionnaire) {
+    next()
+    return
+  }
+
+  const completeness = await getQuestionnaireCompleteness(token)
+  if (completeness !== null && completeness < 100) {
+    next('/questionnaire')
+    return
+  }
+
+  next()
 })
 
 export default router

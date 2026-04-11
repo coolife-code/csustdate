@@ -246,7 +246,7 @@ const handleRegister = async () => {
     userStore.token = res.data.token
     userStore.user = res.data.user
     await userStore.fetchProfile()
-    router.push('/profile')
+    router.push('/questionnaire')
   } catch (error) {
     alert(error.error?.message || '注册失败')
   } finally {

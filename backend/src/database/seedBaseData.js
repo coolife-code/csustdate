@@ -25,6 +25,11 @@ const seedBaseData = async () => {
   if (questionCount === 0) {
     await QuestionnaireQuestion.bulkCreate(questionnaireQuestions)
     logger.info(`Inserted ${questionnaireQuestions.length} questionnaire questions`)
+  } else {
+    for (const question of questionnaireQuestions) {
+      await QuestionnaireQuestion.upsert(question)
+    }
+    logger.info(`Synced ${questionnaireQuestions.length} questionnaire questions`)
   }
 }
 

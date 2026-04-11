@@ -64,6 +64,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import api from '@/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -83,7 +84,9 @@ const handleLogin = async () => {
   loading.value = true
   try {
     await userStore.login(`${form.value.emailPrefix}@csust.edu.cn`, form.value.password)
-    router.push('/match')
+    const progressRes = await api.get('/questionnaire/progress')
+    const completeness = progressRes.data.completeness || 0
+    router.push(completeness >= 100 ? '/match' : '/questionnaire')
   } catch (error) {
     alert(error.error?.message || '登录失败，请检查邮箱和密码')
   } finally {

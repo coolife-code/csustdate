@@ -17,7 +17,13 @@ const router = new Router()
 app.use(errorHandler)
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (ctx) => {
+    const requestOrigin = ctx.request.header.origin
+    if (requestOrigin) {
+      return requestOrigin
+    }
+    return process.env.FRONTEND_URL || 'http://localhost:5173'
+  },
   credentials: true
 }))
 app.use(bodyParser({
