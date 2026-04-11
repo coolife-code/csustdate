@@ -2,6 +2,7 @@ import fs from 'fs'
 import { promises as fsPromises } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { User } from '../models/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -19,12 +20,16 @@ const imageContentTypes = {
 
 const getEmailRegisterGuide = async (ctx) => {
   try {
-    const markdown = await fsPromises.readFile(guideFilePath, 'utf8')
+    const [markdown, registeredCount] = await Promise.all([
+      fsPromises.readFile(guideFilePath, 'utf8'),
+      User.count()
+    ])
     ctx.body = {
       success: true,
       data: {
         title: '学校邮箱开通与登录教程',
-        markdown
+        markdown,
+        registered_count: registeredCount
       }
     }
   } catch (error) {

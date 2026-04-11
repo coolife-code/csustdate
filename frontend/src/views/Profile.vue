@@ -4,7 +4,7 @@
       <div class="max-w-6xl mx-auto px-md py-md flex justify-between items-center">
         <div>
           <h1 class="text-2xl font-serif font-semibold">CSUST DateDrop</h1>
-          <p class="text-sm text-text-secondary mt-1">完善资料，让匹配更懂你</p>
+          <p class="text-sm text-text-secondary mt-1">红楼藏梦，云桥牵缘，把你介绍给更合拍的人</p>
         </div>
         <nav class="flex gap-lg items-center">
           <router-link to="/questionnaire" class="text-text-secondary hover:text-primary transition">我的问卷</router-link>
@@ -18,7 +18,7 @@
     <main class="max-w-5xl mx-auto px-md py-2xl space-y-xl">
       <div class="rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm">
         <h2 class="text-3xl font-serif font-semibold">个人资料</h2>
-        <p class="text-sm text-text-secondary mt-sm">昵称和校区会用于展示与匹配过滤，先确认它们准确无误</p>
+        <p class="text-sm text-text-secondary mt-1">不必张扬，无需尴尬，真实一点就很好</p>
       </div>
 
       <form @submit.prevent="handleSave" class="space-y-xl">
@@ -60,7 +60,7 @@
             <div>
               <label class="block text-sm font-semibold mb-sm">专业</label>
               <select v-model="form.major" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
-                <option value="你猜">你猜（不展示专业）</option>
+                <option value="你猜">你猜</option>
                 <option v-for="major in currentCollegeMajors" :key="major" :value="major">{{ major }}</option>
               </select>
             </div>
@@ -99,7 +99,7 @@
 
         <section class="rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm">
           <h3 class="text-xl font-semibold mb-sm">匹配偏好</h3>
-          <p class="text-sm text-text-secondary mb-lg">以下偏好用于后端匹配第二步过滤，默认“不限”</p>
+          <p class="text-sm text-text-secondary mb-lg">算法都尽力捞人了，咱就别给它加难度啦</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
             <div>
               <label class="block text-sm font-semibold mb-sm">期望性别</label>
@@ -142,6 +142,9 @@
         </section>
 
         <div class="rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm space-y-md">
+          <div v-if="saveMessage" class="rounded-xl border px-md py-sm text-sm" :class="saveMessage.type === 'error' ? 'border-red-300 bg-red-50 text-red-700' : 'border-emerald-300 bg-emerald-50 text-emerald-700'">
+            {{ saveMessage.text }}
+          </div>
           <p class="text-sm text-text-secondary">保存后立即生效，下一轮匹配会优先按你的偏好进行过滤。</p>
           <button type="submit" :disabled="loading" class="w-full py-md rounded-xl bg-primary text-white font-semibold hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition">
             {{ loading ? '保存中...' : '保存资料与偏好' }}
@@ -162,9 +165,19 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const loading = ref(false)
+const saveMessage = ref('')
 const colleges = ref([])
 const grades = ref([])
 const collegeMajors = ref({})
+const getDefaultPreferredGender = (gender) => {
+  if (gender === 'male') {
+    return 'female'
+  }
+  if (gender === 'female') {
+    return 'male'
+  }
+  return 'both'
+}
 
 const form = ref({
   nickname: '',
@@ -178,7 +191,7 @@ const form = ref({
   wechat: '',
   qq: '',
   phone: '',
-  preferredGender: 'both',
+  preferredGender: '',
   preferredCampus: '',
   preferredCollege: '',
   preferredMajor: '',
@@ -247,7 +260,10 @@ const loadProfile = async () => {
   }
   const applyPreferencesToForm = (preferences) => {
     const otherPreferences = preferences?.other_preferences || {}
-    form.value.preferredGender = preferences?.preferred_gender || 'both'
+    const incomingPreferredGender = preferences?.preferred_gender
+    form.value.preferredGender = (!incomingPreferredGender || incomingPreferredGender === 'both')
+      ? getDefaultPreferredGender(form.value.gender)
+      : incomingPreferredGender
     form.value.preferredCampus = otherPreferences.preferred_campus || ''
     form.value.preferredCollege = otherPreferences.preferred_college || ''
     form.value.preferredMajor = otherPreferences.preferred_major || ''
@@ -281,10 +297,17 @@ const loadProfile = async () => {
 const handleSave = async () => {
   loading.value = true
   try {
+    saveMessage.value = ''
     await userStore.updateProfile(form.value)
-    alert('保存成功')
+    saveMessage.value = {
+      type: 'success',
+      text: '资料保存成功，下一次匹配会按你的最新偏好进行。'
+    }
   } catch (error) {
-    alert(error.error?.message || '保存失败')
+    saveMessage.value = {
+      type: 'error',
+      text: error.error?.message || '保存失败，请稍后重试'
+    }
   } finally {
     loading.value = false
   }
@@ -321,6 +344,12 @@ watch(() => form.value.preferredCollege, (nextCollege) => {
   const majors = collegeMajors.value[nextCollege] || []
   if (form.value.preferredMajor && !majors.includes(form.value.preferredMajor)) {
     form.value.preferredMajor = ''
+  }
+})
+
+watch(() => form.value.gender, (nextGender) => {
+  if (!form.value.preferredGender || form.value.preferredGender === 'both') {
+    form.value.preferredGender = getDefaultPreferredGender(nextGender)
   }
 })
 </script>

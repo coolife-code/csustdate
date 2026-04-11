@@ -5,6 +5,15 @@ import api from '@/api'
 export const useUserStore = defineStore('user', () => {
   const user = ref(null)
   const token = ref(localStorage.getItem('token') || '')
+  const getDefaultPreferredGender = (gender) => {
+    if (gender === 'male') {
+      return 'female'
+    }
+    if (gender === 'female') {
+      return 'male'
+    }
+    return 'both'
+  }
   
   const isLoggedIn = computed(() => !!token.value && !!user.value)
   
@@ -46,7 +55,7 @@ export const useUserStore = defineStore('user', () => {
       phone: data.phone
     }
     const preferencePayload = {
-      preferred_gender: data.preferred_gender || data.preferredGender || 'both',
+      preferred_gender: data.preferred_gender || data.preferredGender || getDefaultPreferredGender(data.gender),
       preferred_colleges: data.preferredColleges || [],
       preferred_campus: data.preferredCampus || '',
       preferred_college: data.preferredCollege || '',

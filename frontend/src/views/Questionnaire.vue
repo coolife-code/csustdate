@@ -1,20 +1,16 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-white to-pink-50/40">
     <header class="border-b border-border bg-white/90 backdrop-blur">
-      <div class="max-w-6xl mx-auto px-md py-md flex justify-between items-center">
+      <div class="max-w-6xl mx-auto px-md py-md flex justify-center items-center">
         <div>
           <h1 class="text-2xl font-serif font-semibold">问卷系统</h1>
-          <p class="text-sm text-text-secondary mt-1">认真作答，离“那个对的人”就更近一点</p>
+          <p class="text-sm text-text-secondary mt-1">把你的节奏告诉我们，让相遇更恰好</p>
         </div>
-        <nav class="flex gap-lg">
-          <router-link to="/profile" class="text-text-secondary hover:text-primary transition">个人资料</router-link>
-          <router-link to="/match" class="text-text-secondary hover:text-primary transition">本周匹配</router-link>
-          <router-link to="/pairings" class="text-text-secondary hover:text-primary transition">我的配对</router-link>
-        </nav>
       </div>
     </header>
     <main class="max-w-6xl mx-auto px-md py-xl space-y-xl">
       <div class="rounded-2xl border border-border bg-white shadow-sm p-lg md:p-xl space-y-md">
+        <p class="text-sm text-text-secondary">于书香与林荫之间，等一场恰好的心动</p>
         <div class="flex flex-wrap items-center justify-between gap-sm">
           <p class="text-sm text-text-secondary">已完成 {{ progress.completeness }}%</p>
           <p class="text-sm font-medium text-primary">{{ progressMessage }}</p>
@@ -23,6 +19,9 @@
           <div class="bg-primary h-3 transition-all duration-500" :style="{ width: `${progress.completeness}%` }"></div>
         </div>
         <p class="text-sm text-text-secondary">已答 {{ answeredCount }}/{{ totalQuestionCount }} 题，越认真越容易匹配到合拍的人</p>
+        <p v-if="!canLeaveQuestionnaire" class="text-sm text-text-secondary">
+          问卷未完成前将停留在此页，全部答完后点击“保存问卷并继续”即可离开。
+        </p>
       </div>
 
       <div v-for="(section, sectionIndex) in sections" :key="section.name" class="rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm">
@@ -59,6 +58,9 @@
         </div>
       </div>
       <div class="rounded-2xl border border-border bg-white p-lg md:p-xl space-y-md shadow-sm">
+        <div v-if="saveMessage" class="rounded-xl border px-md py-sm text-sm" :class="saveMessage.type === 'error' ? 'border-red-300 bg-red-50 text-red-700' : 'border-emerald-300 bg-emerald-50 text-emerald-700'">
+          {{ saveMessage.text }}
+        </div>
         <p class="text-sm text-text-secondary">每一题都在帮系统更懂你，填完就去遇见更合拍的 TA</p>
         <button @click="saveAll" :disabled="saving" class="w-full py-md rounded-xl bg-primary text-white font-semibold hover:bg-secondary disabled:opacity-50">
           {{ saving ? '保存中...' : '保存问卷并继续' }}
@@ -69,8 +71,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import api from '@/api'
 
 const router = useRouter()
@@ -80,6 +82,7 @@ const saving = ref(false)
 const progress = ref({
   completeness: 0
 })
+const saveMessage = ref('')
 const hintLabels = ['再答一题更懂你', '缘分加载中', '高匹配加速中', '认真答更准', '冲刺理想匹配']
 
 const totalQuestionCount = computed(() => {
@@ -90,6 +93,10 @@ const answeredCount = computed(() => {
   return Object.values(answers).filter((value) => {
     return value !== '' && value !== null && value !== undefined && (!Array.isArray(value) || value.length > 0)
   }).length
+})
+
+const canLeaveQuestionnaire = computed(() => {
+  return progress.value.completeness >= 100
 })
 
 const progressMessage = computed(() => {
@@ -172,29 +179,67 @@ const saveAll = async () => {
       answer_value: answerValue
     }))
   if (payload.length === 0) {
-    alert('请至少填写一题')
+    saveMessage.value = {
+      type: 'error',
+      text: '请至少填写一题后再保存'
+    }
     return
   }
   saving.value = true
   try {
+    saveMessage.value = ''
     await api.post('/questionnaire/answers', { answers: payload })
     await loadProgress()
     if (progress.value.completeness >= 100) {
-      alert('问卷已完成，即将进入首页')
+      saveMessage.value = {
+        type: 'success',
+        text: '全题已保存，准备送你去本周匹配。'
+      }
       router.push('/match')
       return
     }
-    alert('保存成功')
+    const remainCount = Math.max(totalQuestionCount.value - answeredCount.value, 0)
+    saveMessage.value = {
+      type: 'success',
+      text: `已保存，当前还差 ${remainCount} 题，先别溜，填完我们就放你去见缘分。`
+    }
   } catch (error) {
-    alert(error.error?.message || '保存失败')
+    saveMessage.value = {
+      type: 'error',
+      text: error.error?.message || '保存失败，请稍后再试'
+    }
   } finally {
     saving.value = false
   }
 }
 
+const handleBeforeUnload = (event) => {
+  if (canLeaveQuestionnaire.value) {
+    return
+  }
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+onBeforeRouteLeave(() => {
+  if (canLeaveQuestionnaire.value) {
+    return true
+  }
+  saveMessage.value = {
+    type: 'error',
+    text: '还没填完就想撤退？先把题目收尾并保存，再去下一页。'
+  }
+  return false
+})
+
 onMounted(async () => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
   await loadQuestions()
   await loadAnswers()
   await loadProgress()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 </script>

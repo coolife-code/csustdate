@@ -1,4 +1,4 @@
-import { User, VerificationCode } from '../models/index.js'
+import { User, UserPreference, VerificationCode } from '../models/index.js'
 import { Op } from 'sequelize'
 import { generateToken } from '../utils/jwt.js'
 import emailService from '../services/emailService.js'
@@ -9,6 +9,16 @@ const getVerificationCode = () => {
     return process.env.DEV_MASTER_CODE || '123456'
   }
   return Math.random().toString().slice(-6)
+}
+
+const getDefaultPreferredGender = (gender) => {
+  if (gender === 'male') {
+    return 'female'
+  }
+  if (gender === 'female') {
+    return 'male'
+  }
+  return 'both'
 }
 
 const sendCode = async (ctx) => {
@@ -146,6 +156,13 @@ const register = async (ctx) => {
     campus: campus || null,
     password_hash: password,
     email_verified: true
+  })
+
+  await UserPreference.create({
+    user_id: user.id,
+    preferred_gender: getDefaultPreferredGender(user.gender),
+    preferred_colleges: [],
+    other_preferences: {}
   })
   
   await verificationCode.update({ used: true })

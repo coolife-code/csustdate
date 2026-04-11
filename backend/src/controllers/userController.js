@@ -1,6 +1,16 @@
 import { User, UserPreference, College, Grade } from '../models/index.js'
 import { collegeMajors } from '../database/baseData.js'
 
+const getDefaultPreferredGender = (gender) => {
+  if (gender === 'male') {
+    return 'female'
+  }
+  if (gender === 'female') {
+    return 'male'
+  }
+  return 'both'
+}
+
 const getProfile = async (ctx) => {
   const user = await User.findByPk(ctx.state.user.id, {
     include: [{
@@ -79,6 +89,8 @@ const updatePreferences = async (ctx) => {
     preferred_major,
     preferred_grade
   } = ctx.request.body
+  const user = await User.findByPk(userId)
+  const fallbackPreferredGender = getDefaultPreferredGender(user?.gender)
   
   let preference = await UserPreference.findOne({ where: { user_id: userId } })
   const nextOtherPreferences = {
@@ -91,7 +103,7 @@ const updatePreferences = async (ctx) => {
   if (!preference) {
     preference = await UserPreference.create({
       user_id: userId,
-      preferred_gender: preferred_gender || 'both',
+      preferred_gender: preferred_gender || fallbackPreferredGender,
       preferred_colleges: preferred_colleges || [],
       other_preferences: nextOtherPreferences
     })
