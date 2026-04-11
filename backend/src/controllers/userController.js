@@ -1,4 +1,5 @@
 import { User, UserPreference, College, Grade } from '../models/index.js'
+import { collegeMajors } from '../database/baseData.js'
 
 const getProfile = async (ctx) => {
   const user = await User.findByPk(ctx.state.user.id, {
@@ -70,20 +71,39 @@ const updateProfile = async (ctx) => {
 
 const updatePreferences = async (ctx) => {
   const userId = ctx.state.user.id
-  const { preferred_gender, preferred_colleges } = ctx.request.body
+  const {
+    preferred_gender,
+    preferred_colleges,
+    preferred_campus,
+    preferred_college,
+    preferred_major,
+    preferred_grade
+  } = ctx.request.body
   
   let preference = await UserPreference.findOne({ where: { user_id: userId } })
+  const nextOtherPreferences = {
+    preferred_campus: preferred_campus || '',
+    preferred_college: preferred_college || '',
+    preferred_major: preferred_major || '',
+    preferred_grade: preferred_grade || ''
+  }
   
   if (!preference) {
     preference = await UserPreference.create({
       user_id: userId,
       preferred_gender: preferred_gender || 'both',
-      preferred_colleges: preferred_colleges || []
+      preferred_colleges: preferred_colleges || [],
+      other_preferences: nextOtherPreferences
     })
   } else {
+    const mergedOtherPreferences = {
+      ...(preference.other_preferences || {}),
+      ...nextOtherPreferences
+    }
     await preference.update({
       preferred_gender: preferred_gender || preference.preferred_gender,
-      preferred_colleges: preferred_colleges || preference.preferred_colleges
+      preferred_colleges: preferred_colleges || preference.preferred_colleges,
+      other_preferences: mergedOtherPreferences
     })
   }
   
@@ -116,10 +136,31 @@ const getGrades = async (ctx) => {
   }
 }
 
+const getCollegeMajors = async (ctx) => {
+  const { college } = ctx.query
+  if (college) {
+    ctx.body = {
+      success: true,
+      data: {
+        college,
+        majors: collegeMajors[college] || []
+      }
+    }
+    return
+  }
+  ctx.body = {
+    success: true,
+    data: {
+      college_majors: collegeMajors
+    }
+  }
+}
+
 export {
   getProfile,
   updateProfile,
   updatePreferences,
   getColleges,
-  getGrades
+  getGrades,
+  getCollegeMajors
 }

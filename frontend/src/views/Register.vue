@@ -35,12 +35,21 @@
             <h3 class="text-xl font-semibold mb-lg">验证邮箱</h3>
             
             <div>
-              <label class="block text-sm font-semibold mb-sm">教育邮箱</label>
+              <div class="flex items-center justify-between mb-sm">
+                <label class="block text-sm font-semibold">教育邮箱</label>
+                <button
+                  type="button"
+                  @click="openEmailGuide"
+                  class="text-xs text-primary font-semibold hover:underline"
+                >
+                  没有学校邮箱？查看注册指引
+                </button>
+              </div>
               <div class="flex">
                 <input
                   v-model.trim="form.emailPrefix"
                   type="text"
-                  placeholder="student"
+                  placeholder="学号或邮箱"
                   required
                   class="flex-1 px-md py-sm border border-border border-r-0 focus:border-primary focus:outline-none transition"
                 />
@@ -159,6 +168,41 @@
         </form>
       </div>
     </main>
+
+    <div
+      v-if="showEmailGuide"
+      class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-md"
+      @click.self="showEmailGuide = false"
+    >
+      <div class="w-full max-w-3xl bg-white rounded-lg p-lg">
+        <div class="flex items-center justify-between mb-md">
+          <h4 class="text-lg font-semibold">学校邮箱注册指引（来自邮箱注册.md）</h4>
+          <button
+            type="button"
+            @click="showEmailGuide = false"
+            class="text-text-secondary hover:text-text-primary"
+          >
+            关闭
+          </button>
+        </div>
+        <div v-if="guideLoading" class="text-sm text-text-secondary py-xl text-center">指引加载中...</div>
+        <div v-else-if="guideError" class="text-sm text-red-600 py-xl text-center">{{ guideError }}</div>
+        <div
+          v-else
+          class="max-h-[70vh] overflow-y-auto pr-sm text-sm leading-7 text-text-primary"
+          v-html="guideHtml"
+        ></div>
+        <div class="flex justify-end mt-lg">
+          <button
+            type="button"
+            @click="showEmailGuide = false"
+            class="px-md py-sm bg-primary text-white font-semibold hover:bg-secondary transition"
+          >
+            我知道了
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -174,6 +218,10 @@ const userStore = useUserStore()
 const currentStep = ref(1)
 const loading = ref(false)
 const countdown = ref(0)
+const showEmailGuide = ref(false)
+const guideLoading = ref(false)
+const guideError = ref('')
+const guideHtml = ref('')
 
 const form = ref({
   emailPrefix: '',
@@ -183,6 +231,112 @@ const form = ref({
   gender: '',
   campus: ''
 })
+
+const escapeHtml = (text) =>
+  text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+
+const inlineTextToHtml = (text) => {
+  const escaped = escapeHtml(text)
+  return escaped
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.+?)`/g, '<code class="px-1 py-0.5 bg-surface rounded">$1</code>')
+}
+
+const markdownToHtml = (markdown) => {
+  const lines = markdown.split(/\r?\n/)
+  let html = ''
+  let inList = false
+
+  const closeList = () => {
+    if (inList) {
+      html += '</ul>'
+      inList = false
+    }
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+
+    if (!line) {
+      closeList()
+      continue
+    }
+
+    const imageMatch = line.match(/^!\[(.*?)\]\((.*?)\)$/)
+    if (imageMatch) {
+      closeList()
+      const alt = imageMatch[1] || '指引图片'
+      const filename = imageMatch[2]
+      const src = filename.startsWith('http')
+        ? filename
+        : `/api/docs/email-register/assets/${encodeURIComponent(filename)}`
+      html += `<figure class="my-md"><img src="${src}" alt="${escapeHtml(alt)}" class="w-full rounded border border-border" /><figcaption class="text-xs text-text-muted mt-xs">${escapeHtml(alt)}</figcaption></figure>`
+      continue
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/)
+    if (headingMatch) {
+      closeList()
+      const level = headingMatch[1].length
+      const content = inlineTextToHtml(headingMatch[2])
+      if (level === 1) {
+        html += `<h2 class="text-xl font-semibold mt-md mb-sm">${content}</h2>`
+      } else if (level === 2) {
+        html += `<h3 class="text-lg font-semibold mt-md mb-sm">${content}</h3>`
+      } else {
+        html += `<h4 class="text-base font-semibold mt-md mb-sm">${content}</h4>`
+      }
+      continue
+    }
+
+    const listMatch = line.match(/^- (.+)$/)
+    if (listMatch) {
+      if (!inList) {
+        html += '<ul class="list-disc pl-lg space-y-xs my-sm">'
+        inList = true
+      }
+      html += `<li>${inlineTextToHtml(listMatch[1])}</li>`
+      continue
+    }
+
+    const urlMatch = line.match(/^<((https?:\/\/).+)>\\?$/)
+    if (urlMatch) {
+      closeList()
+      const url = escapeHtml(urlMatch[1])
+      html += `<p class="my-sm"><a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">${url}</a></p>`
+      continue
+    }
+
+    closeList()
+    html += `<p class="my-sm">${inlineTextToHtml(line)}</p>`
+  }
+
+  closeList()
+  return html
+}
+
+const openEmailGuide = async () => {
+  showEmailGuide.value = true
+  if (guideHtml.value || guideLoading.value) {
+    return
+  }
+
+  guideLoading.value = true
+  guideError.value = ''
+  try {
+    const res = await api.get('/docs/email-register')
+    guideHtml.value = markdownToHtml(res.data?.markdown || '')
+  } catch (error) {
+    guideError.value = error.error?.message || '加载邮箱注册指引失败'
+  } finally {
+    guideLoading.value = false
+  }
+}
 
 const sendCode = async () => {
   if (!form.value.emailPrefix || form.value.emailPrefix.includes('@')) {

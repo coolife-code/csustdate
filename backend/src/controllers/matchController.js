@@ -19,7 +19,7 @@ const buildPublicMatchUser = (user) => {
     name: user.name,
     gender: user.gender,
     college: user.college,
-    major: user.major,
+    major: user.major === '你猜' ? null : user.major,
     grade: user.grade,
     bio: user.bio
   }

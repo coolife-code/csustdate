@@ -9,5 +9,6 @@ router.put('/profile', auth, userController.updateProfile)
 router.put('/preferences', auth, userController.updatePreferences)
 router.get('/colleges', userController.getColleges)
 router.get('/grades', userController.getGrades)
+router.get('/majors', userController.getCollegeMajors)
 
 export default router

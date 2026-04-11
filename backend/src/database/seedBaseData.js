@@ -7,6 +7,10 @@ const seedBaseData = async () => {
   if (collegeCount === 0) {
     await College.bulkCreate(colleges)
     logger.info(`Inserted ${colleges.length} colleges`)
+  } else {
+    await College.destroy({ where: {}, truncate: true })
+    await College.bulkCreate(colleges)
+    logger.info(`Synced ${colleges.length} colleges`)
   }
 
   const gradeCount = await Grade.count()

@@ -24,7 +24,10 @@ export const useUserStore = defineStore('user', () => {
   
   const fetchProfile = async () => {
     const res = await api.get('/users/profile')
-    user.value = res.data.user
+    user.value = {
+      ...res.data.user,
+      preferences: res.data.preferences || {}
+    }
     return res.data
   }
   
@@ -43,7 +46,12 @@ export const useUserStore = defineStore('user', () => {
       phone: data.phone
     }
     const preferencePayload = {
-      preferred_gender: data.preferred_gender || data.preferredGender || 'both'
+      preferred_gender: data.preferred_gender || data.preferredGender || 'both',
+      preferred_colleges: data.preferredColleges || [],
+      preferred_campus: data.preferredCampus || '',
+      preferred_college: data.preferredCollege || '',
+      preferred_major: data.preferredMajor || '',
+      preferred_grade: data.preferredGrade || ''
     }
     const [profileRes] = await Promise.all([
       api.put('/users/profile', profilePayload),

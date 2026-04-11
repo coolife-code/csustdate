@@ -5,6 +5,7 @@ import questionnaireRoutes from './questionnaire.js'
 import matchRoutes from './match.js'
 import pairingRoutes from './pairing.js'
 import adminRoutes from './admin.js'
+import docsRoutes from './docs.js'
 
 const router = new Router({ prefix: '/api' })
 
@@ -25,5 +26,6 @@ router.use('/questionnaire', questionnaireRoutes.routes(), questionnaireRoutes.a
 router.use('/matches', matchRoutes.routes(), matchRoutes.allowedMethods())
 router.use('/pairings', pairingRoutes.routes(), pairingRoutes.allowedMethods())
 router.use('/admin', adminRoutes.routes(), adminRoutes.allowedMethods())
+router.use('/docs', docsRoutes.routes(), docsRoutes.allowedMethods())
 
 export default router
