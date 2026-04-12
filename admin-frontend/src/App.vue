@@ -131,8 +131,12 @@
         <div class="row">
           <input v-model="selectedWeekKey" class="input" placeholder="输入 week_key 并加载" />
           <button class="btn" @click="loadWeekMatches">加载</button>
+          <button class="btn btn-secondary" @click="autoRefreshMatches = !autoRefreshMatches">
+            {{ autoRefreshMatches ? '关闭自动刷新' : '开启自动刷新' }}
+          </button>
         </div>
       </div>
+      <p class="tip">解除配对只会更新“配对状态”，不会修改“匹配状态”</p>
       <p v-if="loadingMatches">加载中...</p>
       <p v-else-if="matches.length === 0">暂无匹配记录</p>
       <table v-else class="table">
@@ -141,9 +145,11 @@
             <th>match_id</th>
             <th>用户1</th>
             <th>用户2</th>
-            <th>状态</th>
+            <th>匹配状态</th>
             <th>分数</th>
-            <th>配对</th>
+            <th>配对状态</th>
+            <th>结束时间</th>
+            <th>解除人ID</th>
           </tr>
         </thead>
         <tbody>
@@ -158,9 +164,11 @@
             </td>
             <td><input v-model.number="item.edit_match_score" class="input small" type="number" step="0.1" /></td>
             <td>{{ item.pairing?.status || '-' }}</td>
+            <td>{{ formatDateTime(item.pairing?.ended_at) }}</td>
+            <td>{{ item.pairing?.ended_by || '-' }}</td>
           </tr>
           <tr v-for="item in matches" :key="`editor-${item.id}`">
-            <td colspan="6">
+            <td colspan="8">
               <div class="row">
                 <input v-model.number="item.edit_user1_id" class="input small" type="number" placeholder="新 user1_id" />
                 <input v-model.number="item.edit_user2_id" class="input small" type="number" placeholder="新 user2_id" />
@@ -175,7 +183,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import api from './api'
 
 const statusOptions = [
@@ -200,6 +208,8 @@ const hasAdminKey = ref(Boolean(localStorage.getItem('admin_key')))
 const selectedWeekKey = ref('')
 const selectedUserId = ref(null)
 const selectedUserDetail = ref(null)
+const autoRefreshMatches = ref(true)
+let autoRefreshTimer = null
 
 const createForm = ref({
   week_key: '',
@@ -278,9 +288,14 @@ const normalizeMatchRows = (list) => list.map((item) => ({
   edit_match_score: item.match_score
 }))
 
-const loadWeekMatches = async () => {
+const loadWeekMatches = async ({ silentIfEmpty = false } = {}) => {
   if (!selectedWeekKey.value.trim()) {
-    alert('请先输入 week_key')
+    if (!silentIfEmpty) {
+      alert('请先输入 week_key')
+    }
+    return
+  }
+  if (loadingMatches.value) {
     return
   }
   loadingMatches.value = true
@@ -299,6 +314,34 @@ const loadWeekMatches = async () => {
 const selectWeek = (weekKey) => {
   selectedWeekKey.value = weekKey
   loadWeekMatches()
+}
+
+const formatDateTime = (value) => {
+  if (!value) {
+    return '-'
+  }
+  return new Date(value).toLocaleString()
+}
+
+const startAutoRefresh = () => {
+  if (autoRefreshTimer) {
+    return
+  }
+  autoRefreshTimer = setInterval(() => {
+    if (!autoRefreshMatches.value || !selectedWeekKey.value.trim()) {
+      return
+    }
+    loadWeekMatches({ silentIfEmpty: true })
+    loadWeeks()
+  }, 10000)
+}
+
+const stopAutoRefresh = () => {
+  if (!autoRefreshTimer) {
+    return
+  }
+  clearInterval(autoRefreshTimer)
+  autoRefreshTimer = null
 }
 
 const saveMatch = async (item) => {
@@ -340,5 +383,10 @@ const createMatch = async () => {
 
 onMounted(async () => {
   await Promise.all([loadUsers(), loadWeeks()])
+  startAutoRefresh()
+})
+
+onBeforeUnmount(() => {
+  stopAutoRefresh()
 })
 </script>

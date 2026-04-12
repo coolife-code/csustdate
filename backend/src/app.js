@@ -6,6 +6,7 @@ import dotenv from 'dotenv'
 import apiRoutes from './routes/index.js'
 import errorHandler from './middlewares/errorHandler.js'
 import { initDatabase } from './config/database.js'
+import { startAutoUnlockMatchJob } from './jobs/autoUnlockMatch.js'
 import { startWeeklyMatchJob } from './jobs/weeklyMatch.js'
 import seedBaseData from './database/seedBaseData.js'
 
@@ -60,6 +61,7 @@ const bootstrap = async () => {
   await initDatabase()
   await seedBaseData()
   startWeeklyMatchJob()
+  startAutoUnlockMatchJob()
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)

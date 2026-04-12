@@ -7,7 +7,6 @@
           <p class="text-sm text-text-secondary mt-1">红楼藏梦，云桥牵缘，把你介绍给更合拍的人</p>
         </div>
         <nav class="flex gap-lg items-center">
-          <router-link to="/questionnaire" class="text-text-secondary hover:text-primary transition">我的问卷</router-link>
           <router-link to="/match" class="text-text-secondary hover:text-primary transition">本周匹配</router-link>
           <router-link to="/pairings" class="text-text-secondary hover:text-primary transition">我的配对</router-link>
           <button @click="logout" class="text-text-secondary hover:text-primary transition">退出</button>
@@ -21,9 +20,20 @@
         <p class="text-sm text-text-secondary mt-1">不必张扬，无需尴尬，真实一点就很好</p>
       </div>
 
+      <div class="rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-md">
+        <div>
+          <h3 class="text-xl font-semibold">问卷入口</h3>
+          <p class="text-sm text-text-secondary mt-1">放心，问卷不会考高数。</p>
+        </div>
+        <router-link to="/questionnaire" class="inline-flex items-center justify-center px-lg py-sm rounded-full bg-primary text-white hover:bg-secondary transition whitespace-nowrap">
+          我的问卷
+        </router-link>
+      </div>
+
       <form @submit.prevent="handleSave" class="space-y-xl">
         <section class="rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm">
           <h3 class="text-xl font-semibold mb-lg">基本信息</h3>
+          <p class="text-sm text-text-secondary mb-lg">写得越走心，算法越不容易把你分配给“嗯……再看看”的人。</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
             <div>
               <label class="block text-sm font-semibold mb-sm">昵称</label>
@@ -74,13 +84,14 @@
           </div>
           <div class="mt-lg">
             <label class="block text-sm font-semibold mb-sm">个人简介</label>
-            <textarea v-model="form.bio" rows="4" maxlength="500" placeholder="介绍一下自己吧..." class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition resize-none"></textarea>
+            <textarea v-model="form.bio" rows="4" maxlength="500" placeholder="给TA留个好印象" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition resize-none"></textarea>
             <p class="text-xs text-text-muted mt-xs">{{ form.bio.length }}/500</p>
           </div>
         </section>
 
         <section class="rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm">
           <h3 class="text-xl font-semibold mb-lg">联系方式（双向解锁后可见）</h3>
+          <p class="text-sm text-text-secondary mb-lg">双向奔赴总得有留个联系方式吧</p>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
             <div>
               <label class="block text-sm font-semibold mb-sm">微信号</label>
@@ -145,7 +156,7 @@
           <div v-if="saveMessage" class="rounded-xl border px-md py-sm text-sm" :class="saveMessage.type === 'error' ? 'border-red-300 bg-red-50 text-red-700' : 'border-emerald-300 bg-emerald-50 text-emerald-700'">
             {{ saveMessage.text }}
           </div>
-          <p class="text-sm text-text-secondary">保存后立即生效，下一轮匹配会优先按你的偏好进行过滤。</p>
+          <p class="text-sm text-text-secondary">保存后立即生效，下一轮匹配会优先按你的偏好进行过滤。。</p>
           <button type="submit" :disabled="loading" class="w-full py-md rounded-xl bg-primary text-white font-semibold hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition">
             {{ loading ? '保存中...' : '保存资料与偏好' }}
           </button>

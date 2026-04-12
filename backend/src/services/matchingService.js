@@ -193,6 +193,47 @@ const createPairingFromMatch = async (match, unlockedByUserId) => {
   })
 }
 
+const autoUnlockExpiredPendingMatches = async () => {
+  const autoUnlockHours = Number(process.env.MATCH_AUTO_UNLOCK_HOURS || 5)
+  const cutoffTime = new Date(Date.now() - autoUnlockHours * 60 * 60 * 1000)
+  const matches = await Match.findAll({
+    where: {
+      status: 'pending',
+      createdAt: {
+        [Op.lte]: cutoffTime
+      }
+    },
+    order: [['created_at', 'ASC']]
+  })
+  if (matches.length === 0) {
+    return { scanned: 0, autoUnlocked: 0 }
+  }
+  let autoUnlocked = 0
+  for (const match of matches) {
+    if (match.status !== 'pending') {
+      continue
+    }
+    match.status = 'both_unlocked'
+    await match.save()
+    await createPairingFromMatch(match, null)
+    const [user1, user2] = await Promise.all([
+      User.findByPk(match.user1_id),
+      User.findByPk(match.user2_id)
+    ])
+    if (user1 && user2) {
+      await Promise.allSettled([
+        emailService.sendPairingUnlocked(user1, user2),
+        emailService.sendPairingUnlocked(user2, user1)
+      ])
+    }
+    autoUnlocked += 1
+  }
+  return {
+    scanned: matches.length,
+    autoUnlocked
+  }
+}
+
 const runWeeklyMatching = async () => {
   const { weekKey, weekNumber, year } = getWeekInfo()
   const existingCount = await Match.count({ where: { week_key: weekKey } })
@@ -292,5 +333,6 @@ export {
   getWeekInfo,
   getUserCurrentMatch,
   createPairingFromMatch,
+  autoUnlockExpiredPendingMatches,
   runWeeklyMatching
 }

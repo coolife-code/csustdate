@@ -7,7 +7,6 @@
           <p class="text-sm text-text-secondary mt-1">不必慌张，无需言说，本期匹配已至</p>
         </div>
         <nav class="flex gap-lg">
-          <router-link to="/questionnaire" class="text-text-secondary hover:text-primary transition">问卷</router-link>
           <router-link to="/pairings" class="text-text-secondary hover:text-primary transition">我的配对</router-link>
           <router-link to="/profile" class="text-text-secondary hover:text-primary transition">个人资料</router-link>
         </nav>
@@ -26,7 +25,7 @@
       </div>
       <div v-if="loading" class="text-center text-text-muted">加载中...</div>
       <div v-else-if="!match" class="rounded-2xl border border-border bg-white p-xl text-center space-y-md shadow-sm">
-        <p>本周暂未生成匹配，先完善问卷会更容易遇见合拍的人。</p>
+        <p>本周暂未生成匹配，先完善个人信息会更容易遇见合拍的人。</p>
         <button @click="goFillProfile" class="px-lg py-sm rounded-full bg-primary text-white hover:bg-secondary transition">立即尝试填写</button>
       </div>
       <div v-else class="rounded-2xl border border-border bg-white p-xl space-y-lg shadow-sm">
@@ -34,16 +33,22 @@
           <h2 class="text-2xl font-semibold">{{ match.match_user?.nickname || '匿名同学' }}</h2>
           <span class="px-sm py-1 rounded-full text-xs border border-border bg-surface text-text-secondary">匹配分数 {{ match.match_score }}</span>
         </div>
-        <p class="text-text-secondary leading-relaxed">“{{ match.match_user?.bio || '这个人还没来得及写下自我介绍，也许你们会在聊天里慢慢认识彼此。' }}”</p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-md text-sm">
-          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">学院：{{ match.match_user?.college || '未填写' }}</p>
-          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">专业：{{ match.match_user?.major || '未填写' }}</p>
-          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">年级：{{ match.match_user?.grade || '未填写' }}</p>
+        <div class="rounded-xl border border-border bg-surface/50 p-md">
+          <p class="text-text-secondary leading-relaxed">“{{ match.match_user?.bio || '这位同学比较神秘，简介留白了。建议你们先从“今天吃了啥”破冰。' }}”</p>
         </div>
-        <div class="flex gap-md">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-md text-sm">
+          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">学院：{{ match.match_user?.college || '你猜' }}</p>
+          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">专业：{{ match.match_user?.major || '你猜' }}</p>
+          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">年级：{{ match.match_user?.grade || '你猜' }}</p>
+        </div>
+        <div v-if="isFullyUnlocked" class="rounded-xl border border-emerald-200 bg-emerald-50/70 px-md py-sm">
+          <p class="text-sm text-emerald-700">恭喜双向解锁成功，联系方式已发邮件，也可去“我的配对”查看详情。</p>
+        </div>
+        <div v-if="showActionButtons" class="flex gap-md">
           <button @click="unlock" :disabled="acting" class="flex-1 py-sm rounded-full bg-primary text-white hover:bg-secondary disabled:opacity-50 transition">解锁</button>
           <button @click="skip" :disabled="acting" class="flex-1 py-sm rounded-full border border-border hover:bg-gray-50 disabled:opacity-50 transition">暂不解锁</button>
         </div>
+        <p v-if="showActionButtons" class="text-sm text-text-secondary">建议你们直接原地组队，别祸害别人了。</p>
         <p class="text-sm text-text-secondary">当前状态：{{ statusLabel }}</p>
       </div>
     </main>
@@ -62,23 +67,45 @@ const match = ref(null)
 const registeredCount = ref(null)
 const actionMessage = ref('')
 
+const isFullyUnlocked = computed(() => {
+  return match.value?.status === 'both_unlocked' || match.value?.status === 'paired'
+})
+
+const showActionButtons = computed(() => {
+  const status = match.value?.status
+  if (!status) {
+    return false
+  }
+  if (status === 'both_unlocked' || status === 'paired' || status === 'both_skipped') {
+    return false
+  }
+  if (status === 'user1_skipped' || status === 'user2_skipped') {
+    return false
+  }
+  return true
+})
+
 const statusLabel = computed(() => {
-  if (!match.value?.status) {
-    return '待确认'
+  const status = match.value?.status
+  if (!status) {
+    return '缘分加载中，马上就到'
   }
-  if (match.value.status === 'pending') {
-    return '等待你的选择'
+  if (status === 'pending') {
+    return '你们都在观望，空气里有点小紧张'
   }
-  if (match.value.status === 'unlocked') {
-    return '你已解锁，等待对方回应'
+  if (status === 'user1_unlocked' || status === 'user2_unlocked' || status === 'unlocked') {
+    return '一方已解锁，另一方正在思考人生'
   }
-  if (match.value.status === 'paired') {
-    return '已双向解锁'
+  if (status === 'both_unlocked' || status === 'paired') {
+    return '双向解锁完成，月老在工位上鼓掌'
   }
-  if (match.value.status === 'skipped') {
-    return '你已跳过本次匹配'
+  if (status === 'user1_skipped' || status === 'user2_skipped' || status === 'skipped') {
+    return '一方已跳过，这次先礼貌退场'
   }
-  return match.value.status
+  if (status === 'both_skipped') {
+    return '双方都选择跳过，缘分本轮休假'
+  }
+  return `状态：${status}`
 })
 
 const loadRegisteredCount = async () => {
