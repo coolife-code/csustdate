@@ -73,6 +73,12 @@ body {
   width: 140px;
 }
 
+.textarea {
+  min-height: 96px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
 .btn {
   border: 0;
   border-radius: 8px;
@@ -89,6 +95,29 @@ body {
 
 .btn-secondary {
   background: #344054;
+}
+
+.btn-danger {
+  background: #b42318;
+}
+
+.nav-row {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-link {
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  color: #344054;
+}
+
+.router-link-active.nav-link {
+  background: #eef4ff;
+  border-color: #155eef;
+  color: #155eef;
 }
 
 .tip {

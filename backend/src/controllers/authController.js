@@ -4,11 +4,17 @@ import { generateToken } from '../utils/jwt.js'
 import emailService from '../services/emailService.js'
 import logger from '../utils/logger.js'
 
+const VERIFICATION_CODE_TTL_MINUTES = Number(process.env.VERIFICATION_CODE_TTL_MINUTES || 10)
+const VERIFICATION_CODE_RESEND_SECONDS = Number(process.env.VERIFICATION_CODE_RESEND_SECONDS || 60)
+
+const normalizeEmail = (email = '') => email.trim().toLowerCase()
+const ALLOWED_CODE_TYPES = new Set(['register', 'reset_password'])
+
 const getVerificationCode = () => {
-  if (process.env.NODE_ENV !== 'production') {
-    return process.env.DEV_MASTER_CODE || '123456'
+  if (process.env.NODE_ENV !== 'production' && process.env.DEV_MASTER_CODE) {
+    return process.env.DEV_MASTER_CODE
   }
-  return Math.random().toString().slice(-6)
+  return String(Math.floor(100000 + Math.random() * 900000))
 }
 
 const getDefaultPreferredGender = (gender) => {
@@ -22,7 +28,8 @@ const getDefaultPreferredGender = (gender) => {
 }
 
 const sendCode = async (ctx) => {
-  const { email, type } = ctx.request.body
+  const { email: rawEmail, type } = ctx.request.body
+  const email = normalizeEmail(rawEmail)
   
   if (!email || !email.endsWith('@csust.edu.cn')) {
     ctx.status = 400
@@ -31,6 +38,18 @@ const sendCode = async (ctx) => {
       error: {
         code: 'INVALID_EMAIL',
         message: '请使用长沙理工大学教育邮箱'
+      }
+    }
+    return
+  }
+
+  if (!ALLOWED_CODE_TYPES.has(type)) {
+    ctx.status = 400
+    ctx.body = {
+      success: false,
+      error: {
+        code: 'INVALID_TYPE',
+        message: '验证码类型不合法'
       }
     }
     return
@@ -66,8 +85,42 @@ const sendCode = async (ctx) => {
     }
   }
   
+  const recentCode = await VerificationCode.findOne({
+    where: {
+      email,
+      type,
+      createdAt: {
+        [Op.gt]: new Date(Date.now() - VERIFICATION_CODE_RESEND_SECONDS * 1000)
+      }
+    },
+    order: [['createdAt', 'DESC']]
+  })
+
+  if (recentCode) {
+    ctx.status = 429
+    ctx.body = {
+      success: false,
+      error: {
+        code: 'TOO_FREQUENT',
+        message: `请求过于频繁，请在 ${VERIFICATION_CODE_RESEND_SECONDS} 秒后重试`
+      }
+    }
+    return
+  }
+
   const code = getVerificationCode()
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+  const expiresAt = new Date(Date.now() + VERIFICATION_CODE_TTL_MINUTES * 60 * 1000)
+
+  await VerificationCode.update(
+    { used: true },
+    {
+      where: {
+        email,
+        type,
+        used: false
+      }
+    }
+  )
   
   await VerificationCode.create({
     email,
@@ -98,7 +151,8 @@ const sendCode = async (ctx) => {
 }
 
 const register = async (ctx) => {
-  const { email, password, code, nickname, gender, campus } = ctx.request.body
+  const { email: rawEmail, password, code, nickname, gender, campus } = ctx.request.body
+  const email = normalizeEmail(rawEmail)
   
   if (!email || !password || !code || !nickname) {
     ctx.status = 400
@@ -181,7 +235,8 @@ const register = async (ctx) => {
 }
 
 const login = async (ctx) => {
-  const { email, password } = ctx.request.body
+  const { email: rawEmail, password } = ctx.request.body
+  const email = normalizeEmail(rawEmail)
   
   if (!email || !password) {
     ctx.status = 400
@@ -255,7 +310,8 @@ const logout = async (ctx) => {
 }
 
 const resetPassword = async (ctx) => {
-  const { email, code, new_password } = ctx.request.body
+  const { email: rawEmail, code, new_password } = ctx.request.body
+  const email = normalizeEmail(rawEmail)
   
   const verificationCode = await VerificationCode.findOne({
     where: {

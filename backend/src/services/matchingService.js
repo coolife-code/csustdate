@@ -1,6 +1,6 @@
 import { Op, fn, col, literal } from 'sequelize'
 import { Match, Pairing, QuestionnaireAnswer, QuestionnaireQuestion, User, UserPreference } from '../models/index.js'
-import emailService from './emailService.js'
+import { enqueueEmailNotification } from './emailQueueService.js'
 
 const getWeekInfo = (date = new Date()) => {
   const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
@@ -222,8 +222,20 @@ const autoUnlockExpiredPendingMatches = async () => {
     ])
     if (user1 && user2) {
       await Promise.allSettled([
-        emailService.sendPairingUnlocked(user1, user2),
-        emailService.sendPairingUnlocked(user2, user1)
+        enqueueEmailNotification({
+          type: 'pairing_unlocked',
+          toUserId: user1.id,
+          matchUserId: user2.id,
+          matchId: match.id,
+          priority: 80
+        }),
+        enqueueEmailNotification({
+          type: 'pairing_unlocked',
+          toUserId: user2.id,
+          matchUserId: user1.id,
+          matchId: match.id,
+          priority: 80
+        })
       ])
     }
     autoUnlocked += 1
@@ -320,8 +332,20 @@ const runWeeklyMatching = async () => {
     })
     created += 1
     await Promise.all([
-      emailService.sendMatchNotification(user, partner),
-      emailService.sendMatchNotification(partner, user)
+      enqueueEmailNotification({
+        type: 'match_notification',
+        toUserId: user.id,
+        matchUserId: partner.id,
+        matchId: match.id,
+        priority: 100
+      }),
+      enqueueEmailNotification({
+        type: 'match_notification',
+        toUserId: partner.id,
+        matchUserId: user.id,
+        matchId: match.id,
+        priority: 100
+      })
     ])
     await match.reload()
   }

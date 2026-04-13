@@ -8,6 +8,8 @@ import QuestionnaireQuestion from './QuestionnaireQuestion.js'
 import QuestionnaireAnswer from './QuestionnaireAnswer.js'
 import Match from './Match.js'
 import Pairing from './Pairing.js'
+import EmailNotificationJob from './EmailNotificationJob.js'
+import EmailTemplateConfig from './EmailTemplateConfig.js'
 
 User.hasOne(UserPreference, { foreignKey: 'user_id', as: 'preferences' })
 UserPreference.belongsTo(User, { foreignKey: 'user_id' })
@@ -25,6 +27,10 @@ Match.hasOne(Pairing, { foreignKey: 'match_id', as: 'pairing' })
 Pairing.belongsTo(Match, { foreignKey: 'match_id', as: 'match' })
 Pairing.belongsTo(User, { foreignKey: 'user1_id', as: 'user1' })
 Pairing.belongsTo(User, { foreignKey: 'user2_id', as: 'user2' })
+User.hasMany(EmailNotificationJob, { foreignKey: 'to_user_id', as: 'emailJobs' })
+EmailNotificationJob.belongsTo(User, { foreignKey: 'to_user_id', as: 'toUser' })
+EmailNotificationJob.belongsTo(User, { foreignKey: 'match_user_id', as: 'matchUser' })
+EmailNotificationJob.belongsTo(Match, { foreignKey: 'match_id', as: 'match' })
 
 export {
   User,
@@ -36,5 +42,7 @@ export {
   QuestionnaireQuestion,
   QuestionnaireAnswer,
   Match,
-  Pairing
+  Pairing,
+  EmailNotificationJob,
+  EmailTemplateConfig
 }

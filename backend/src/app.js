@@ -2,15 +2,14 @@ import Koa from 'koa'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import Router from '@koa/router'
-import dotenv from 'dotenv'
+import 'dotenv/config'
 import apiRoutes from './routes/index.js'
 import errorHandler from './middlewares/errorHandler.js'
 import { initDatabase } from './config/database.js'
 import { startAutoUnlockMatchJob } from './jobs/autoUnlockMatch.js'
 import { startWeeklyMatchJob } from './jobs/weeklyMatch.js'
 import seedBaseData from './database/seedBaseData.js'
-
-dotenv.config()
+import { startEmailQueueWorker } from './services/emailQueueService.js'
 
 const app = new Koa()
 const router = new Router()
@@ -62,6 +61,7 @@ const bootstrap = async () => {
   await seedBaseData()
   startWeeklyMatchJob()
   startAutoUnlockMatchJob()
+  startEmailQueueWorker()
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
