@@ -197,7 +197,7 @@ class EmailService {
       `
     }
     
-    return this.sendMail(mailOptions)
+    return this.sendMail(mailOptions, { type: 'verification_code' })
   }
   
   async sendMatchNotification(user, matchUser) {
@@ -263,7 +263,7 @@ class EmailService {
       `
     }
     
-    return this.sendMail(mailOptions)
+    return this.sendMail(mailOptions, { type: 'match_notification' })
   }
 
   async sendPairingUnlocked(user, matchUser) {
@@ -299,7 +299,7 @@ class EmailService {
         </div>
       `
     }
-    return this.sendMail(mailOptions)
+    return this.sendMail(mailOptions, { type: 'pairing_unlocked' })
   }
 
   renderTemplate(template = '', variables = {}) {
@@ -353,13 +353,18 @@ class EmailService {
         </div>
       `
     }
-    return this.sendMail(mailOptions)
+    return this.sendMail(mailOptions, { type: 'custom_template' })
   }
   
-  async sendMail(mailOptions) {
+  async sendMail(mailOptions, meta = {}) {
     try {
       const info = await this.transporter.sendMail(mailOptions)
-      logger.info('Email sent:', info.messageId)
+      logger.info('Email sent', {
+        type: meta.type || 'unknown',
+        to: mailOptions.to || '',
+        subject: mailOptions.subject || '',
+        message_id: info.messageId
+      })
       return info
     } catch (error) {
       logger.error('Send email error:', error)

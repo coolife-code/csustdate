@@ -57,6 +57,12 @@ const routes = [
     name: 'Pairings',
     component: () => import('@/views/Pairings.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/want-now',
+    name: 'WantNow',
+    component: () => import('@/views/WantNow.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

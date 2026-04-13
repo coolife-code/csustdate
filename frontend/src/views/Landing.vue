@@ -1,20 +1,29 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-white via-rose-50/30 to-amber-50/40">
     <header class="border-b border-border bg-white/90 backdrop-blur">
-      <div class="max-w-6xl mx-auto px-md py-md flex justify-between items-center">
+      <div class="max-w-6xl mx-auto px-md py-md">
         <div>
           <h1 class="text-2xl font-serif font-semibold">CSUST DateDrop</h1>
           <p class="text-xs text-text-secondary mt-1">于书香与林荫之间，等一场恰好的心动</p>
         </div>
-        <nav class="flex gap-lg">
-          <router-link to="/login" class="text-text-secondary hover:text-primary transition">登录</router-link>
-          <router-link to="/register" class="px-lg py-sm rounded-full bg-primary text-white hover:bg-secondary transition">注册</router-link>
-        </nav>
       </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-md py-4xl">
-      <div class="text-center mb-4xl rounded-3xl border border-border/70 bg-white/80 p-2xl shadow-sm">
+      <div class="relative overflow-hidden text-center mb-4xl rounded-3xl border border-border/70 bg-white/80 p-2xl shadow-sm">
+        <video
+          :src="teaserVideoUrl"
+          class="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
+          autoplay
+          loop
+          muted
+          playsinline
+          disablepictureinpicture
+          tabindex="-1"
+          aria-hidden="true"
+        />
+        <div class="absolute inset-0 bg-white/78" />
+        <div class="relative z-10">
         <p class="text-sm text-text-secondary tracking-[0.2em] mb-md">CSUST DATE · 双向为约</p>
         <h2 class="text-5xl font-serif font-bold mb-lg leading-tight">每周二的晚风，都会捎来一封温柔的信</h2>
         <p class="text-xl text-text-secondary mb-md">那是算法悄悄为你觅得的，一个灵魂相近的人</p>
@@ -28,6 +37,7 @@
         >
           开启这周的缘分
         </router-link>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-4xl">
@@ -74,6 +84,7 @@ import { onMounted, ref } from 'vue'
 import api from '@/api'
 
 const registeredCount = ref(null)
+const teaserVideoUrl = new URL('../../fodder/d5e263288a5f1306024e46992b980f3c.webm', import.meta.url).href
 
 const loadRegisteredCount = async () => {
   try {

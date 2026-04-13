@@ -24,9 +24,20 @@
         {{ actionMessage.text }}
       </div>
       <div v-if="loading" class="text-center text-text-muted">加载中...</div>
-      <div v-else-if="!match" class="rounded-2xl border border-border bg-white p-xl text-center space-y-md shadow-sm">
-        <p>本周暂未生成匹配，先完善个人信息会更容易遇见合拍的人。</p>
-        <button @click="goFillProfile" class="px-lg py-sm rounded-full bg-primary text-white hover:bg-secondary transition">立即尝试填写</button>
+      <div v-else-if="!match" class="relative">
+        <button
+          @click="goWantNow"
+          class="absolute -top-3 right-2 text-xs text-text-muted/60 hover:text-text-secondary transition tracking-wide"
+        >
+          我现在就要
+        </button>
+        <div class="rounded-2xl border border-border bg-white p-xl text-center space-y-md shadow-sm">
+          <p>本周暂未生成匹配，先完善个人信息会更容易遇见合拍的人。</p>
+          <button @click="goFillProfile" class="px-lg py-sm rounded-full bg-primary text-white hover:bg-secondary transition">立即尝试填写</button>
+        </div>
+        <div class="mt-md rounded-2xl border border-border bg-white p-xl text-center space-y-md shadow-sm">
+          <p class="text-text-secondary">标注：记得关注你的教育邮箱哦</p>
+        </div>
       </div>
       <div v-else class="rounded-2xl border border-border bg-white p-xl space-y-lg shadow-sm">
         <div class="flex items-center justify-between gap-md">
@@ -131,6 +142,10 @@ const loadCurrentMatch = async () => {
 
 const goFillProfile = () => {
   router.push('/profile')
+}
+
+const goWantNow = () => {
+  router.push('/want-now')
 }
 
 const unlock = async () => {

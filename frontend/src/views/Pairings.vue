@@ -22,7 +22,7 @@
       <section class="rounded-2xl border border-border bg-white p-xl shadow-sm">
         <h2 class="text-xl font-semibold mb-md">当前配对</h2>
         <div v-if="loadingActive" class="text-text-muted">加载中...</div>
-        <div v-else-if="!activePairing" class="text-text-secondary">暂无活跃配对，愿你在下一次来信中遇见惊喜。</div>
+        <div v-else-if="!activePairing" class="text-text-secondary">无。但未来的机会总比过去多</div>
         <div v-else class="space-y-sm">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-md text-sm">
             <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">昵称：{{ activePairing.match_user?.nickname || '未填写' }}</p>
@@ -41,7 +41,7 @@
         <h2 class="text-xl font-semibold mb-md">历史配对</h2>
         <p class="text-sm text-text-secondary mb-md">每一段记录都算数：有些是故事开头，有些是下次更会爱的伏笔。</p>
         <div v-if="loadingHistory" class="text-text-muted">加载中...</div>
-        <div v-else-if="history.length === 0" class="text-text-secondary">暂无历史配对记录，故事正要开始。</div>
+        <div v-else-if="history.length === 0" class="text-text-secondary">暂无，故事正要开始。</div>
         <div v-else class="space-y-md">
           <div v-for="item in history" :key="item.id" class="rounded-xl border border-border p-md bg-surface/40">
             <p>对象：{{ item.match_user?.nickname || item.match_user?.name || '未填写' }}</p>
