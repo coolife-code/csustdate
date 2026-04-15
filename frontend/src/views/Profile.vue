@@ -108,46 +108,57 @@
           </div>
         </section>
 
-        <section class="rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm">
-          <h3 class="text-xl font-semibold mb-sm">匹配偏好</h3>
-          <p class="text-sm text-text-secondary mb-lg">算法都尽力捞人了，咱就别给它加难度啦</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
-            <div>
-              <label class="block text-sm font-semibold mb-sm">期望性别</label>
-              <select v-model="form.preferredGender" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
-                <option value="both">不限</option>
-                <option value="male">男</option>
-                <option value="female">女</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-sm">期望校区</label>
-              <select v-model="form.preferredCampus" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
-                <option value="">不限</option>
-                <option value="云塘校区">云塘校区</option>
-                <option value="金盆岭校区">金盆岭校区</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-sm">期望学院</label>
-              <select v-model="form.preferredCollege" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
-                <option value="">不限</option>
-                <option v-for="college in colleges" :key="`preferred-${college.id}`" :value="college.name">{{ college.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-sm">期望专业</label>
-              <select v-model="form.preferredMajor" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
-                <option value="">不限</option>
-                <option v-for="major in currentPreferredCollegeMajors" :key="`preferred-major-${major}`" :value="major">{{ major }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-sm">期望年级</label>
-              <select v-model="form.preferredGrade" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
-                <option value="">不限</option>
-                <option v-for="grade in grades" :key="`preferred-${grade.id}`" :value="grade.name">{{ grade.name }}</option>
-              </select>
+        <section class="relative overflow-hidden rounded-2xl border border-border bg-white p-lg md:p-xl shadow-sm">
+          <video
+            class="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            :src="basicInfoBgVideo"
+            autoplay
+            loop
+            muted
+            playsinline
+          ></video>
+          <div class="pointer-events-none absolute inset-0 bg-white/82 backdrop-blur-[1px]"></div>
+          <div class="relative z-10">
+            <h3 class="text-xl font-semibold mb-sm">匹配偏好</h3>
+            <p class="text-sm text-text-secondary mb-lg">算法都尽力捞人了，咱就别给它加难度啦</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+              <div>
+                <label class="block text-sm font-semibold mb-sm">期望性别</label>
+                <select v-model="form.preferredGender" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
+                  <option value="both">不限</option>
+                  <option value="male">男</option>
+                  <option value="female">女</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-sm">期望校区</label>
+                <select v-model="form.preferredCampus" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
+                  <option value="">不限</option>
+                  <option value="云塘校区">云塘校区</option>
+                  <option value="金盆岭校区">金盆岭校区</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-sm">期望学院</label>
+                <select v-model="form.preferredCollege" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
+                  <option value="">不限</option>
+                  <option v-for="college in colleges" :key="`preferred-${college.id}`" :value="college.name">{{ college.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-sm">期望专业</label>
+                <select v-model="form.preferredMajor" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
+                  <option value="">不限</option>
+                  <option v-for="major in currentPreferredCollegeMajors" :key="`preferred-major-${major}`" :value="major">{{ major }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-sm">期望年级</label>
+                <select v-model="form.preferredGrade" class="w-full px-md py-sm rounded-xl border border-border focus:border-primary focus:outline-none transition">
+                  <option value="">不限</option>
+                  <option v-for="grade in grades" :key="`preferred-${grade.id}`" :value="grade.name">{{ grade.name }}</option>
+                </select>
+              </div>
             </div>
           </div>
         </section>
@@ -171,6 +182,8 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import api from '@/api'
+
+const basicInfoBgVideo = new URL('../../fodder/もなかもち_tears.webm', import.meta.url).href
 
 const router = useRouter()
 const userStore = useUserStore()

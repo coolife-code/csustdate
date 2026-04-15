@@ -59,7 +59,11 @@
           <button @click="unlock" :disabled="acting" class="flex-1 py-sm rounded-full bg-primary text-white hover:bg-secondary disabled:opacity-50 transition">解锁</button>
           <button @click="skip" :disabled="acting" class="flex-1 py-sm rounded-full border border-border hover:bg-gray-50 disabled:opacity-50 transition">暂不解锁</button>
         </div>
+        <div v-if="showRegretButton" class="flex gap-md">
+          <button @click="regret" :disabled="acting" class="flex-1 py-sm rounded-full bg-primary text-white hover:bg-secondary disabled:opacity-50 transition">反悔并解锁</button>
+        </div>
         <p v-if="showActionButtons" class="text-sm text-text-secondary">建议你们直接原地组队，别祸害别人了。</p>
+        <p v-if="showRegretButton" class="text-sm text-text-secondary">后悔药已备好，给孩子一条活路吧</p>
         <p class="text-sm text-text-secondary">当前状态：{{ statusLabel }}</p>
       </div>
     </main>
@@ -77,6 +81,7 @@ const acting = ref(false)
 const match = ref(null)
 const registeredCount = ref(null)
 const actionMessage = ref('')
+const currentUserId = ref(null)
 
 const isFullyUnlocked = computed(() => {
   return match.value?.status === 'both_unlocked' || match.value?.status === 'paired'
@@ -95,6 +100,26 @@ const showActionButtons = computed(() => {
   }
   return true
 })
+
+const skippedByCurrentUser = computed(() => {
+  const status = match.value?.status
+  const userId = currentUserId.value
+  if (!status || !userId) {
+    return false
+  }
+  if (status === 'both_skipped') {
+    return true
+  }
+  if (status === 'user1_skipped') {
+    return match.value?.user1_id === userId
+  }
+  if (status === 'user2_skipped') {
+    return match.value?.user2_id === userId
+  }
+  return false
+})
+
+const showRegretButton = computed(() => skippedByCurrentUser.value)
 
 const statusLabel = computed(() => {
   const status = match.value?.status
@@ -137,6 +162,21 @@ const loadCurrentMatch = async () => {
     match.value = res.data?.match || null
   } finally {
     loading.value = false
+  }
+}
+
+const decodeCurrentUserId = () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      currentUserId.value = null
+      return
+    }
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const parsedId = Number(payload?.id)
+    currentUserId.value = Number.isFinite(parsedId) ? parsedId : null
+  } catch {
+    currentUserId.value = null
   }
 }
 
@@ -199,7 +239,30 @@ const skip = async () => {
   }
 }
 
+const regret = async () => {
+  if (!match.value) {
+    return
+  }
+  acting.value = true
+  try {
+    const res = await api.post(`/matches/${match.value.id}/regret`)
+    match.value.status = res.data.status
+    actionMessage.value = {
+      type: 'success',
+      text: '已反悔并恢复为解锁状态，等待对方回应。'
+    }
+  } catch (error) {
+    actionMessage.value = {
+      type: 'error',
+      text: error.error?.message || '操作失败，请稍后再试'
+    }
+  } finally {
+    acting.value = false
+  }
+}
+
 onMounted(() => {
+  decodeCurrentUserId()
   loadCurrentMatch()
   loadRegisteredCount()
 })

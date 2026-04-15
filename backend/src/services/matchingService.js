@@ -198,7 +198,10 @@ const autoUnlockExpiredPendingMatches = async () => {
   const cutoffTime = new Date(Date.now() - autoUnlockHours * 60 * 60 * 1000)
   const matches = await Match.findAll({
     where: {
-      status: 'pending',
+      // Auto unlock all timeout matches as long as neither side has skipped.
+      status: {
+        [Op.in]: ['pending', 'user1_unlocked', 'user2_unlocked']
+      },
       createdAt: {
         [Op.lte]: cutoffTime
       }
@@ -210,7 +213,7 @@ const autoUnlockExpiredPendingMatches = async () => {
   }
   let autoUnlocked = 0
   for (const match of matches) {
-    if (match.status !== 'pending') {
+    if (match.status === 'both_unlocked' || match.status === 'both_skipped' || match.status === 'user1_skipped' || match.status === 'user2_skipped') {
       continue
     }
     match.status = 'both_unlocked'

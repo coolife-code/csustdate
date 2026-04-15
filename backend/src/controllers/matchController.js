@@ -127,6 +127,45 @@ const updateMatchAction = async (ctx, action) => {
     return
   }
 
+  if (action === 'regret') {
+    if (match.status === 'both_unlocked') {
+      ctx.status = 409
+      ctx.body = {
+        success: false,
+        error: {
+          code: 'ALREADY_UNLOCKED',
+          message: '已完成双向解锁，无需反悔'
+        }
+      }
+      return
+    }
+
+    const userSkipped = (isUser1 && (match.status === 'user1_skipped' || match.status === 'both_skipped'))
+      || (!isUser1 && (match.status === 'user2_skipped' || match.status === 'both_skipped'))
+    if (!userSkipped) {
+      ctx.status = 409
+      ctx.body = {
+        success: false,
+        error: {
+          code: 'NOT_SKIPPED_BY_USER',
+          message: '当前不是你的跳过状态，无法反悔'
+        }
+      }
+      return
+    }
+
+    match.status = isUser1 ? 'user1_unlocked' : 'user2_unlocked'
+    await match.save()
+    ctx.body = {
+      success: true,
+      data: {
+        match_id: match.id,
+        status: match.status
+      }
+    }
+    return
+  }
+
   if (match.status === 'both_unlocked') {
     ctx.status = 409
     ctx.body = {
@@ -155,6 +194,7 @@ const updateMatchAction = async (ctx, action) => {
 
 const unlockMatch = async (ctx) => updateMatchAction(ctx, 'unlock')
 const skipMatch = async (ctx) => updateMatchAction(ctx, 'skip')
+const regretMatch = async (ctx) => updateMatchAction(ctx, 'regret')
 
 const getMatchHistory = async (ctx) => {
   const page = Math.max(parseInt(ctx.query.page || '1', 10), 1)
@@ -221,6 +261,7 @@ export {
   getCurrentMatch,
   unlockMatch,
   skipMatch,
+  regretMatch,
   getMatchHistory,
   runManualMatch,
   getPairingByMatch
