@@ -9,6 +9,11 @@ const __dirname = path.dirname(__filename)
 const docsDir = path.resolve(__dirname, '../../../docs')
 const guideFileName = '邮箱注册.md'
 const guideFilePath = path.join(docsDir, guideFileName)
+const REGISTERED_COUNT_CACHE_TTL_MS = Number(process.env.REGISTERED_COUNT_CACHE_TTL_MS || 60 * 1000)
+let registeredCountCache = {
+  value: null,
+  expiresAt: 0
+}
 
 const imageContentTypes = {
   '.png': 'image/png',
@@ -40,6 +45,26 @@ const getEmailRegisterGuide = async (ctx) => {
         code: 'GUIDE_NOT_FOUND',
         message: '邮箱注册指引文档不存在'
       }
+    }
+  }
+}
+
+const getRegisteredCount = async (ctx) => {
+  const now = Date.now()
+  let registeredCount = registeredCountCache.value
+
+  if (registeredCount === null || registeredCountCache.expiresAt <= now) {
+    registeredCount = await User.count()
+    registeredCountCache = {
+      value: registeredCount,
+      expiresAt: now + REGISTERED_COUNT_CACHE_TTL_MS
+    }
+  }
+
+  ctx.body = {
+    success: true,
+    data: {
+      registered_count: registeredCount
     }
   }
 }
@@ -82,5 +107,6 @@ const getEmailRegisterGuideAsset = async (ctx) => {
 
 export {
   getEmailRegisterGuide,
-  getEmailRegisterGuideAsset
+  getEmailRegisterGuideAsset,
+  getRegisteredCount
 }

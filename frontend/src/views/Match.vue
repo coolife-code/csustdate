@@ -39,33 +39,38 @@
           <p class="text-text-secondary">标注：记得关注你的教育邮箱哦</p>
         </div>
       </div>
-      <div v-else class="rounded-2xl border border-border bg-white p-xl space-y-lg shadow-sm">
-        <div class="flex items-center justify-between gap-md">
-          <h2 class="text-2xl font-semibold">{{ match.match_user?.nickname || '匿名同学' }}</h2>
-          <span class="px-sm py-1 rounded-full text-xs border border-border bg-surface text-text-secondary">匹配分数 {{ match.match_score }}</span>
+      <template v-else>
+        <div class="rounded-2xl border border-border bg-white p-xl space-y-lg shadow-sm">
+          <div class="flex items-center justify-between gap-md">
+            <h2 class="text-2xl font-semibold">{{ match.match_user?.nickname || '匿名同学' }}</h2>
+            <span class="px-sm py-1 rounded-full text-xs border border-border bg-surface text-text-secondary">匹配分数 {{ match.match_score }}</span>
+          </div>
+          <div class="rounded-xl border border-border bg-surface/50 p-md">
+            <p class="text-text-secondary leading-relaxed">“{{ match.match_user?.bio || '这位同学比较神秘，简介留白了。建议你们先从“今天吃了啥”破冰。' }}”</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-md text-sm">
+            <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">学院：{{ match.match_user?.college || '你猜' }}</p>
+            <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">专业：{{ match.match_user?.major || '你猜' }}</p>
+            <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">年级：{{ match.match_user?.grade || '你猜' }}</p>
+          </div>
+          <div v-if="isFullyUnlocked" class="rounded-xl border border-emerald-200 bg-emerald-50/70 px-md py-sm">
+            <p class="text-sm text-emerald-700">恭喜双向解锁成功，联系方式已发邮件，也可去“我的配对”查看详情。</p>
+          </div>
+          <div v-if="showActionButtons" class="flex gap-md">
+            <button @click="unlock" :disabled="acting" class="flex-1 py-sm rounded-full bg-primary text-white hover:bg-secondary disabled:opacity-50 transition">解锁</button>
+            <button @click="skip" :disabled="acting" class="flex-1 py-sm rounded-full border border-border hover:bg-gray-50 disabled:opacity-50 transition">暂不解锁</button>
+          </div>
+          <div v-if="showRegretButton" class="flex gap-md">
+            <button @click="regret" :disabled="acting" class="flex-1 py-sm rounded-full bg-primary text-white hover:bg-secondary disabled:opacity-50 transition">反悔并解锁</button>
+          </div>
+          <p v-if="showActionButtons" class="text-sm text-text-secondary">建议你们直接原地组队，别祸害别人了。</p>
+          <p v-if="showRegretButton" class="text-sm text-text-secondary">后悔药已备好，给孩子一条活路吧</p>
+          <p class="text-sm text-text-secondary">当前状态：{{ statusLabel }}</p>
         </div>
-        <div class="rounded-xl border border-border bg-surface/50 p-md">
-          <p class="text-text-secondary leading-relaxed">“{{ match.match_user?.bio || '这位同学比较神秘，简介留白了。建议你们先从“今天吃了啥”破冰。' }}”</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-md text-sm">
-          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">学院：{{ match.match_user?.college || '你猜' }}</p>
-          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">专业：{{ match.match_user?.major || '你猜' }}</p>
-          <p class="rounded-xl border border-border bg-surface/70 px-md py-sm">年级：{{ match.match_user?.grade || '你猜' }}</p>
-        </div>
-        <div v-if="isFullyUnlocked" class="rounded-xl border border-emerald-200 bg-emerald-50/70 px-md py-sm">
-          <p class="text-sm text-emerald-700">恭喜双向解锁成功，联系方式已发邮件，也可去“我的配对”查看详情。</p>
-        </div>
-        <div v-if="showActionButtons" class="flex gap-md">
-          <button @click="unlock" :disabled="acting" class="flex-1 py-sm rounded-full bg-primary text-white hover:bg-secondary disabled:opacity-50 transition">解锁</button>
-          <button @click="skip" :disabled="acting" class="flex-1 py-sm rounded-full border border-border hover:bg-gray-50 disabled:opacity-50 transition">暂不解锁</button>
-        </div>
-        <div v-if="showRegretButton" class="flex gap-md">
-          <button @click="regret" :disabled="acting" class="flex-1 py-sm rounded-full bg-primary text-white hover:bg-secondary disabled:opacity-50 transition">反悔并解锁</button>
-        </div>
-        <p v-if="showActionButtons" class="text-sm text-text-secondary">建议你们直接原地组队，别祸害别人了。</p>
-        <p v-if="showRegretButton" class="text-sm text-text-secondary">后悔药已备好，给孩子一条活路吧</p>
-        <p class="text-sm text-text-secondary">当前状态：{{ statusLabel }}</p>
-      </div>
+        <p class="text-xs text-text-muted px-sm">
+          可以将教育邮箱登录在手机上的邮箱软件中，第一时间获取心动来信
+        </p>
+      </template>
     </main>
   </div>
 </template>
@@ -146,7 +151,7 @@ const statusLabel = computed(() => {
 
 const loadRegisteredCount = async () => {
   try {
-    const res = await api.get('/docs/email-register')
+    const res = await api.get('/docs/registered-count')
     if (typeof res.data?.registered_count === 'number') {
       registeredCount.value = res.data.registered_count
     }

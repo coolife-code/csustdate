@@ -62,12 +62,15 @@ export const useUserStore = defineStore('user', () => {
       preferred_major: data.preferredMajor || '',
       preferred_grade: data.preferredGrade || ''
     }
-    const [profileRes] = await Promise.all([
-      api.put('/users/profile', profilePayload),
-      api.put('/users/preferences', preferencePayload)
-    ])
-    user.value = profileRes.data
-    return profileRes.data
+    const res = await api.put('/users/profile/full', {
+      ...profilePayload,
+      ...preferencePayload
+    })
+    user.value = {
+      ...(res.data.user || {}),
+      preferences: res.data.preferences || {}
+    }
+    return res.data
   }
   
   return {

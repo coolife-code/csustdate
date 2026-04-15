@@ -26,11 +26,7 @@ const buildPublicMatchUser = (user) => {
 }
 
 const getCurrentMatch = async (ctx) => {
-  let match = await getUserCurrentMatch(ctx.state.user.id)
-  if (!match) {
-    await runWeeklyMatching()
-    match = await getUserCurrentMatch(ctx.state.user.id)
-  }
+  const match = await getUserCurrentMatch(ctx.state.user.id)
   if (!match) {
     ctx.body = {
       success: true,

@@ -1,22 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
-const getQuestionnaireCompleteness = async (token) => {
-  try {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
-    const response = await fetch(`${baseURL}/questionnaire/progress`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-    if (!response.ok) {
-      return null
-    }
-    const result = await response.json()
-    return result?.data?.completeness ?? null
-  } catch {
-    return null
-  }
-}
+import { getQuestionnaireCompleteness } from '@/utils/questionnaireProgress'
 
 const routes = [
   {
@@ -85,7 +68,10 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.path === '/') {
-    const completeness = await getQuestionnaireCompleteness(token)
+    const completeness = await getQuestionnaireCompleteness({
+      token,
+      baseURL: import.meta.env.VITE_API_BASE_URL || '/api'
+    })
     if (completeness === null) {
       next('/match')
       return
@@ -100,7 +86,10 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  const completeness = await getQuestionnaireCompleteness(token)
+  const completeness = await getQuestionnaireCompleteness({
+    token,
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api'
+  })
   if (completeness !== null && completeness < 100) {
     next('/questionnaire')
     return

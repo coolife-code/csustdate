@@ -14,15 +14,36 @@ import { startEmailQueueWorker } from './services/emailQueueService.js'
 const app = new Koa()
 const router = new Router()
 
+const parseAllowedOrigins = () => {
+  const fromEnv = (process.env.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+  const defaults = []
+  if (process.env.FRONTEND_URL) {
+    defaults.push(process.env.FRONTEND_URL.trim())
+  }
+  if ((process.env.NODE_ENV || 'development') !== 'production') {
+    defaults.push('http://localhost:5173')
+    defaults.push('http://127.0.0.1:5173')
+  }
+  return new Set([...defaults, ...fromEnv])
+}
+
+const allowedOrigins = parseAllowedOrigins()
+
 app.use(errorHandler)
 
 app.use(cors({
   origin: (ctx) => {
     const requestOrigin = ctx.request.header.origin
-    if (requestOrigin) {
+    if (!requestOrigin) {
+      return process.env.FRONTEND_URL || 'http://localhost:5173'
+    }
+    if (allowedOrigins.has(requestOrigin)) {
       return requestOrigin
     }
-    return process.env.FRONTEND_URL || 'http://localhost:5173'
+    return false
   },
   credentials: true
 }))

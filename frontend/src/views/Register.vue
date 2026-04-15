@@ -176,7 +176,7 @@
     >
       <div class="w-full max-w-3xl bg-white rounded-lg p-lg">
         <div class="flex items-center justify-between mb-md">
-          <h4 class="text-lg font-semibold">学校邮箱注册指引（来自邮箱注册.md）</h4>
+          <h4 class="text-lg font-semibold">学校邮箱注册指引</h4>
           <button
             type="button"
             @click="showEmailGuide = false"
@@ -271,10 +271,10 @@ const markdownToHtml = (markdown) => {
     if (imageMatch) {
       closeList()
       const alt = imageMatch[1] || '指引图片'
-      const filename = imageMatch[2]
+      const filename = imageMatch[2].replace(/^\.?\//, '')
       const src = filename.startsWith('http')
         ? filename
-        : `/api/docs/email-register/assets/${encodeURIComponent(filename)}`
+        : `/email-guide/${filename}`
       html += `<figure class="my-md"><img src="${src}" alt="${escapeHtml(alt)}" class="w-full rounded border border-border" /><figcaption class="text-xs text-text-muted mt-xs">${escapeHtml(alt)}</figcaption></figure>`
       continue
     }
@@ -329,10 +329,14 @@ const openEmailGuide = async () => {
   guideLoading.value = true
   guideError.value = ''
   try {
-    const res = await api.get('/docs/email-register')
-    guideHtml.value = markdownToHtml(res.data?.markdown || '')
+    const response = await fetch('/email-guide/guide.md')
+    if (!response.ok) {
+      throw new Error('加载邮箱注册指引失败')
+    }
+    const markdown = await response.text()
+    guideHtml.value = markdownToHtml(markdown)
   } catch (error) {
-    guideError.value = error.error?.message || '加载邮箱注册指引失败'
+    guideError.value = error.message || '加载邮箱注册指引失败'
   } finally {
     guideLoading.value = false
   }

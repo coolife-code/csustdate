@@ -2,7 +2,21 @@
   <section class="card">
     <div class="section-title">
       <h2>每周配对概览</h2>
-      <button class="btn" @click="loadWeeks">刷新</button>
+      <div class="row">
+        <button class="btn btn-secondary" :disabled="loadingHealth" @click="loadMatchingHealth">检查健康</button>
+        <button class="btn" :disabled="runningWeeklyMatch" @click="runWeeklyMatchNow">
+          {{ runningWeeklyMatch ? '执行中...' : '手动执行周匹配' }}
+        </button>
+        <button class="btn" @click="loadWeeks">刷新</button>
+      </div>
+    </div>
+    <div v-if="matchingHealth" class="tip">
+      健康状态：{{ matchingHealth.healthy ? '正常' : '告警' }}；
+      本周 {{ matchingHealth.current_week?.week_key }} 匹配数 {{ matchingHealth.current_week_match_count }}；
+      最近生成周 {{ matchingHealth.latest_generated_week_key || '-' }}
+    </div>
+    <div v-if="matchingHealth && !matchingHealth.healthy && matchingHealth.warning" class="tip" style="color: #b45309;">
+      {{ matchingHealth.warning }}
     </div>
     <p v-if="loadingWeeks">加载中...</p>
     <p v-else-if="weeks.length === 0">暂无周数据</p>
@@ -129,8 +143,11 @@ const weeks = ref([])
 const matches = ref([])
 const loadingWeeks = ref(false)
 const loadingMatches = ref(false)
+const loadingHealth = ref(false)
+const runningWeeklyMatch = ref(false)
 const selectedWeekKey = ref('')
 const autoRefreshMatches = ref(true)
+const matchingHealth = ref(null)
 let autoRefreshTimer = null
 
 const createForm = ref({
@@ -156,6 +173,34 @@ const loadWeeks = async () => {
     handleError(error, '加载周统计失败')
   } finally {
     loadingWeeks.value = false
+  }
+}
+
+const loadMatchingHealth = async () => {
+  loadingHealth.value = true
+  try {
+    const res = await api.get('/admin/matches/health')
+    matchingHealth.value = res.data || null
+  } catch (error) {
+    handleError(error, '加载匹配健康状态失败')
+  } finally {
+    loadingHealth.value = false
+  }
+}
+
+const runWeeklyMatchNow = async () => {
+  runningWeeklyMatch.value = true
+  try {
+    const res = await api.post('/admin/matches/run-weekly')
+    await Promise.all([loadWeeks(), loadMatchingHealth()])
+    if (selectedWeekKey.value.trim()) {
+      await loadWeekMatches({ silentIfEmpty: true })
+    }
+    alert(res.message || '周匹配执行完成')
+  } catch (error) {
+    handleError(error, '执行周匹配失败')
+  } finally {
+    runningWeeklyMatch.value = false
   }
 }
 
@@ -244,6 +289,7 @@ const startAutoRefresh = () => {
     if (autoRefreshMatches.value && selectedWeekKey.value.trim()) {
       loadWeekMatches({ silentIfEmpty: true })
       loadWeeks()
+      loadMatchingHealth()
     }
   }, 10000)
 }
@@ -258,6 +304,7 @@ const stopAutoRefresh = () => {
 
 onMounted(() => {
   loadWeeks()
+  loadMatchingHealth()
   startAutoRefresh()
 })
 

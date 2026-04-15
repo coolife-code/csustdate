@@ -88,7 +88,7 @@ const teaserVideoUrl = new URL('../../fodder/d5e263288a5f1306024e46992b980f3c.we
 
 const loadRegisteredCount = async () => {
   try {
-    const res = await api.get('/docs/email-register')
+    const res = await api.get('/docs/registered-count')
     if (typeof res.data?.registered_count === 'number') {
       registeredCount.value = res.data.registered_count
     }

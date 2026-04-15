@@ -3,6 +3,7 @@ import { EmailNotificationJob, Match, Pairing, QuestionnaireAnswer, Questionnair
 import { sequelize } from '../config/database.js'
 import { listEmailJobs, retryEmailJob } from '../services/emailQueueService.js'
 import emailService from '../services/emailService.js'
+import { getWeekInfo, runWeeklyMatching } from '../services/matchingService.js'
 
 const unlockedStatuses = new Set(['user1_unlocked', 'user2_unlocked', 'both_unlocked'])
 const skippedStatuses = new Set(['user1_skipped', 'user2_skipped', 'both_skipped'])
@@ -370,6 +371,58 @@ const getWeekSummaries = async (ctx) => {
   }
 }
 
+const getMatchingHealth = async (ctx) => {
+  const now = new Date()
+  const { weekKey, weekNumber, year } = getWeekInfo(now)
+  const currentWeekMatches = await Match.count({
+    where: { week_key: weekKey }
+  })
+  const latestMatch = await Match.findOne({
+    order: [['year', 'DESC'], ['week_number', 'DESC'], ['id', 'DESC']]
+  })
+
+  const day = now.getDay()
+  const shouldHaveRun = day > 2 || (day === 2 && now.getHours() >= 0)
+  const healthy = !shouldHaveRun || currentWeekMatches > 0
+
+  ctx.body = {
+    success: true,
+    data: {
+      healthy,
+      should_have_run: shouldHaveRun,
+      current_week: {
+        week_key: weekKey,
+        week_number: weekNumber,
+        year
+      },
+      current_week_match_count: currentWeekMatches,
+      latest_generated_week_key: latestMatch?.week_key || null,
+      latest_generated_at: latestMatch?.created_at || null,
+      warning: healthy
+        ? ''
+        : '本周匹配仍为空，可能周二定时任务未触发，请手动执行一次周匹配。'
+    }
+  }
+}
+
+const runWeeklyMatchingNow = async (ctx) => {
+  const result = await runWeeklyMatching()
+  const { weekKey } = getWeekInfo()
+  const currentWeekMatches = await Match.count({
+    where: { week_key: weekKey }
+  })
+  ctx.body = {
+    success: true,
+    data: {
+      ...result,
+      current_week_match_count: currentWeekMatches
+    },
+    message: result.skipped
+      ? '本周匹配已存在，未重复生成'
+      : '已执行周匹配任务'
+  }
+}
+
 const getWeekMatches = async (ctx) => {
   const { week_key: weekKey } = ctx.query
   if (!weekKey) {
@@ -721,6 +774,8 @@ export {
   deleteUser,
   getUserDetail,
   getWeekSummaries,
+  getMatchingHealth,
+  runWeeklyMatchingNow,
   getWeekMatches,
   forceUpdateMatch,
   createMatch,

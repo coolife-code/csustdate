@@ -1,14 +1,7 @@
 import { sequelize } from '../config/database.js'
 import { QuestionnaireAnswer, QuestionnaireQuestion } from '../models/index.js'
 
-const getQuestions = async (ctx) => {
-  const { section } = ctx.query
-  const where = section ? { section } : {}
-  const questions = await QuestionnaireQuestion.findAll({
-    where,
-    order: [['sort_order', 'ASC'], ['id', 'ASC']]
-  })
-
+const groupQuestionsBySection = (questions) => {
   const grouped = {}
   for (const question of questions) {
     const key = question.section
@@ -21,6 +14,49 @@ const getQuestions = async (ctx) => {
     }
     grouped[key].questions.push(question)
   }
+  return Object.values(grouped)
+}
+
+const buildProgressData = (questions, answers) => {
+  const answerSet = new Set(answers.map(item => item.question_id))
+  const sectionMap = new Map()
+  for (const question of questions) {
+    if (!sectionMap.has(question.section)) {
+      sectionMap.set(question.section, {
+        name: question.section,
+        title: question.section_title,
+        total: 0,
+        answered: 0,
+        completed: false
+      })
+    }
+    const section = sectionMap.get(question.section)
+    section.total += 1
+    if (answerSet.has(question.id)) {
+      section.answered += 1
+    }
+    section.completed = section.total > 0 && section.total === section.answered
+  }
+  const totalQuestions = questions.length
+  const answeredQuestions = answers.length
+  const completeness = totalQuestions ? Number(((answeredQuestions / totalQuestions) * 100).toFixed(2)) : 0
+  return {
+    total_questions: totalQuestions,
+    answered_questions: answeredQuestions,
+    completeness,
+    sections: [...sectionMap.values()],
+    can_match: completeness >= 50,
+    min_completeness_for_match: 50
+  }
+}
+
+const getQuestions = async (ctx) => {
+  const { section } = ctx.query
+  const where = section ? { section } : {}
+  const questions = await QuestionnaireQuestion.findAll({
+    where,
+    order: [['sort_order', 'ASC'], ['id', 'ASC']]
+  })
 
   const totalQuestions = await QuestionnaireQuestion.count()
   const answeredQuestions = await QuestionnaireAnswer.count({
@@ -30,9 +66,40 @@ const getQuestions = async (ctx) => {
   ctx.body = {
     success: true,
     data: {
-      sections: Object.values(grouped),
+      sections: groupQuestionsBySection(questions),
       total_questions: totalQuestions,
       completed_questions: answeredQuestions
+    }
+  }
+}
+
+const getBootstrap = async (ctx) => {
+  const [questions, answers] = await Promise.all([
+    QuestionnaireQuestion.findAll({
+      order: [['sort_order', 'ASC'], ['id', 'ASC']]
+    }),
+    QuestionnaireAnswer.findAll({
+      where: { user_id: ctx.state.user.id }
+    })
+  ])
+  const sections = groupQuestionsBySection(questions)
+  const questionCodeMap = new Map(questions.map((item) => [item.id, item.question_code]))
+  const answersByQuestionId = {}
+  const answersByQuestionCode = {}
+  for (const answer of answers) {
+    answersByQuestionId[answer.question_id] = answer.answer_value
+    const questionCode = questionCodeMap.get(answer.question_id)
+    if (questionCode) {
+      answersByQuestionCode[questionCode] = answer.answer_value
+    }
+  }
+  ctx.body = {
+    success: true,
+    data: {
+      sections,
+      answers_by_question_id: answersByQuestionId,
+      answers_by_question_code: answersByQuestionCode,
+      progress: buildProgressData(questions, answers)
     }
   }
 }
@@ -146,45 +213,16 @@ const getProgress = async (ctx) => {
       where: { user_id: ctx.state.user.id }
     })
   ])
-
-  const answerSet = new Set(answers.map(item => item.question_id))
-  const sectionMap = new Map()
-  for (const question of questions) {
-    if (!sectionMap.has(question.section)) {
-      sectionMap.set(question.section, {
-        name: question.section,
-        title: question.section_title,
-        total: 0,
-        answered: 0,
-        completed: false
-      })
-    }
-    const section = sectionMap.get(question.section)
-    section.total += 1
-    if (answerSet.has(question.id)) {
-      section.answered += 1
-    }
-    section.completed = section.total > 0 && section.total === section.answered
-  }
-
-  const totalQuestions = questions.length
-  const answeredQuestions = answers.length
-  const completeness = totalQuestions ? Number(((answeredQuestions / totalQuestions) * 100).toFixed(2)) : 0
+  const progress = buildProgressData(questions, answers)
   ctx.body = {
     success: true,
-    data: {
-      total_questions: totalQuestions,
-      answered_questions: answeredQuestions,
-      completeness,
-      sections: [...sectionMap.values()],
-      can_match: completeness >= 50,
-      min_completeness_for_match: 50
-    }
+    data: progress
   }
 }
 
 export {
   getQuestions,
+  getBootstrap,
   saveAnswers,
   getAnswers,
   getProgress

@@ -5,6 +5,7 @@ import * as questionnaireController from '../controllers/questionnaireController
 const router = new Router()
 
 router.get('/questions', auth, questionnaireController.getQuestions)
+router.get('/bootstrap', auth, questionnaireController.getBootstrap)
 router.post('/answers', auth, questionnaireController.saveAnswers)
 router.get('/answers', auth, questionnaireController.getAnswers)
 router.get('/progress', auth, questionnaireController.getProgress)

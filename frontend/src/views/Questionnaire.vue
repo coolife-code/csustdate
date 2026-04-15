@@ -74,6 +74,7 @@
 import { reactive, ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import api from '@/api'
+import { setCachedCompleteness } from '@/utils/questionnaireProgress'
 
 const router = useRouter()
 const sections = ref([])
@@ -150,25 +151,29 @@ const getQuestionHint = (questionId) => {
   return hintLabels[questionId % hintLabels.length]
 }
 
-const loadQuestions = async () => {
-  const res = await api.get('/questionnaire/questions')
-  sections.value = res.data.sections
-}
-
-const loadAnswers = async () => {
-  const res = await api.get('/questionnaire/answers')
-  const allQuestions = sections.value.flatMap(section => section.questions)
-  for (const question of allQuestions) {
-    const value = res.data.answers[question.question_code]
-    if (value !== undefined) {
-      answers[question.id] = value
-    }
+const loadBootstrap = async () => {
+  const res = await api.get('/questionnaire/bootstrap')
+  sections.value = res.data.sections || []
+  progress.value = res.data.progress || {
+    completeness: 0
+  }
+  const token = localStorage.getItem('token')
+  if (token && typeof progress.value.completeness === 'number') {
+    setCachedCompleteness(token, progress.value.completeness)
+  }
+  const serverAnswers = res.data.answers_by_question_id || {}
+  for (const [questionId, answerValue] of Object.entries(serverAnswers)) {
+    answers[Number(questionId)] = answerValue
   }
 }
 
 const loadProgress = async () => {
   const res = await api.get('/questionnaire/progress')
   progress.value = res.data
+  const token = localStorage.getItem('token')
+  if (token && typeof progress.value.completeness === 'number') {
+    setCachedCompleteness(token, progress.value.completeness)
+  }
 }
 
 const saveAll = async () => {
@@ -234,9 +239,7 @@ onBeforeRouteLeave(() => {
 
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
-  await loadQuestions()
-  await loadAnswers()
-  await loadProgress()
+  await loadBootstrap()
 })
 
 onBeforeUnmount(() => {
