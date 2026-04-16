@@ -89,4 +89,4 @@ npm run seed
 - [数据库设计](docs/database.md)
 - [前端开发](docs/frontend.md)
 - [后端开发](docs/backend.md)
-- [部署指南（EdgeOne Pages + 云服务器）](docs/部署指南-EdgeOnePages+云服务器.md)
+- [部署指南（前后端同机云服务器）](docs/部署指南-EdgeOnePages+云服务器.md)
