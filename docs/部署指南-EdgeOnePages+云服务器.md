@@ -1,37 +1,27 @@
-# 部署指南（前后端同机部署到云服务器）
+# 部署指南（EdgeOne Pages + 云服务器）
 
-本文改为“前后端都部署在同一台云服务器”的方案，域名使用：
+本文针对当前项目推荐部署方式：
 
-- `csustdate.com`（`@` 解析到 `180.76.248.142`）
+- 前端：腾讯云 EdgeOne Pages
+- 后端：2核2G 云服务器（Node.js + PM2 + Nginx）
 
-## 1. 部署目标结构
+## 1. 部署前准备
 
-- 前端：`frontend` 打包后由 Nginx 直接托管
-- 后端：Node.js + PM2 监听 `127.0.0.1:3000`
-- Nginx：同域名下转发 `/api` 到后端，其余路径给前端静态资源
+### 1.1 域名规划
 
-这样线上前端只需要请求 `/api`，无需单独 `api` 子域名。
+- 前端：`https://www.your-domain.com`
+- 后端：`https://api.your-domain.com`
 
-## 2. 环境变量配置
+### 1.2 后端环境变量
 
-### 2.1 前端（生产）
-
-在 `frontend/.env.production` 设置：
-
-```env
-VITE_API_BASE_URL=/api
-```
-
-### 2.2 后端（生产）
-
-参考 `backend/.env.example`，至少要配置：
+参考 `backend/.env.example`，生产环境至少要配置：
 
 - `NODE_ENV=production`
 - `PORT=3000`
 - `DB_PATH=./datedrop.sqlite` 或绝对路径
 - `JWT_SECRET=...`（强随机）
-- `FRONTEND_URL=https://csustdate.com`
-- `CORS_ALLOWED_ORIGINS=https://csustdate.com,https://www.csustdate.com`
+- `FRONTEND_URL=https://www.your-domain.com`
+- `CORS_ALLOWED_ORIGINS=https://www.your-domain.com`
 - `MATCH_AUTO_UNLOCK_HOURS=5`
 - `SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS`
 
@@ -41,53 +31,62 @@ VITE_API_BASE_URL=/api
 - `EMAIL_JOB_PER_SECOND_LIMIT=1`
 - `EMAIL_JOB_BATCH_SIZE=10`
 
-## 3. 前端部署
+## 2. 前端部署（EdgeOne Pages）
 
-在服务器执行：
+在 EdgeOne Pages 中连接 GitHub 仓库，配置：
 
-```bash
-cd /path/to/project/frontend
-npm ci
-npm run build
-```
+- 项目目录：`frontend`
+- 构建命令：`npm ci && npm run build`
+- 输出目录：`dist`
+- Node 版本：18
 
-将打包产物 `frontend/dist` 作为 Nginx 站点根目录（或拷贝到 `/var/www/csustdate/dist`）。
+设置前端环境变量：
 
-## 4. 后端部署
+- `VITE_API_BASE_URL=https://api.your-domain.com/api`
 
-### 4.1 安装并启动
+然后绑定前端域名并开启 HTTPS。
 
-```bash
-cd /path/to/project/backend
-npm ci --omit=dev
-cp .env.example .env
-# 按本指南修改 .env 后：
-pm2 start src/app.js --name datedrop-api -i 1
-pm2 save
-pm2 startup
-```
+如果使用 Vue history 路由，需在 EdgeOne Pages 控制台添加重写规则：
 
-说明：后端包含定时任务与邮件队列 worker，必须保持单实例（`-i 1`）。
+- `/*` -> `/index.html`
 
-## 5. Nginx 配置（同域名）
+### 2.1 当前阶段（后端未上云）建议
 
-示例（HTTP 版本）：
+当前可以先让前端连接本地后端，同时保留后续一键切云能力（仅限本机开发）：
+
+- 开发环境使用 `frontend/.env.development`（已配置为 `VITE_API_BASE_URL=/api`）
+- `vite.config.js` 已将 `/api` 代理到 `http://localhost:3000`
+- 本地启动前后端即可联调，无需改业务代码
+
+注意：以上代理只在 `npm run dev` 本地开发服务器生效。  
+如果前端已部署到 EdgeOne Pages，`localhost:3000` 指向的是用户自己的设备，不会自动连到你的云服务器；线上必须把 `VITE_API_BASE_URL` 配成可公网访问的后端地址（如 `https://api.your-domain.com/api`）。
+
+后续切到云服务器时，只需改前端环境变量为：
+
+- `VITE_API_BASE_URL=https://api.your-domain.com/api`
+
+不需要修改 `src/api/index.js` 代码。
+
+## 3. 后端部署（云服务器）
+
+### 3.1 启动方式
+
+后端包含定时任务与邮件队列 worker，必须单实例运行：
+
+- PM2 启动建议：`pm2 start src/app.js --name datedrop-api -i 1`
+
+### 3.2 Nginx 反代
+
+将 `api.your-domain.com` 反向代理到 `127.0.0.1:3000`。
+
+示例：
 
 ```nginx
 server {
   listen 80;
-  server_name csustdate.com www.csustdate.com;
+  server_name api.your-domain.com;
 
-  root /var/www/csustdate/dist;
-  index index.html;
-
-  # 前端 history 路由
   location / {
-    try_files $uri $uri/ /index.html;
-  }
-
-  # 后端 API 反向代理（保留 /api 前缀）
-  location /api {
     proxy_pass http://127.0.0.1:3000;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
@@ -97,29 +96,18 @@ server {
 }
 ```
 
-然后配置 HTTPS（推荐 certbot）：
+随后用 certbot 配置 HTTPS。
 
-```bash
-sudo certbot --nginx -d csustdate.com -d www.csustdate.com
-```
+## 4. 上线联调清单
 
-## 6. DNS 与防火墙检查
+- 打开前端后，请求地址是否为 `https://api.your-domain.com/api/...`
+- `GET https://api.your-domain.com/api/health` 返回成功
+- 登录、资料保存、问卷、匹配接口可正常调用
+- 自动解锁与邮件队列日志正常输出
 
-- DNS：确认 `@` A 记录指向 `180.76.248.142`
-- 可选：`www` CNAME 到 `csustdate.com`（或 A 记录同 IP）
-- 安全组/防火墙：放行 `80`、`443`（SSH 端口按你的策略）
+## 5. 代码已包含的部署适配
 
-## 7. 上线联调清单
+当前仓库已支持：
 
-- `https://csustdate.com` 能正常打开前端
-- `https://csustdate.com/api/health` 返回成功
-- 登录、资料保存、问卷、匹配接口可调用
-- PM2 日志中自动解锁与邮件队列正常输出
-
-## 8. 当前代码状态说明
-
-当前仓库已对同机部署兼容：
-
-- 前端通过 `VITE_API_BASE_URL` 控制 API 前缀
-- 前端默认支持 `/api`（同域名代理）模式
-- 后端已支持 CORS 白名单（`FRONTEND_URL` + `CORS_ALLOWED_ORIGINS`）
+- 前端通过 `VITE_API_BASE_URL` 切换 API 地址（见 `frontend/.env.development` 与 `frontend/.env.production.example`）
+- 后端 CORS 白名单（`FRONTEND_URL` + `CORS_ALLOWED_ORIGINS`）
